@@ -77,6 +77,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
   const [localLikeCount, setLocalLikeCount] = useState(roast.aura_gained)
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
   const [followLoading, setFollowLoading] = useState(false)
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [isReported, setIsReported] = useState(false)
   const [showReportMenu, setShowReportMenu] = useState(false)
@@ -116,19 +117,36 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
       return
     }
     if (followLoading) return
+
+    if (isFollowing) {
+      // Show confirmation modal for unfollowing
+      setShowUnfollowConfirm(true)
+      return
+    }
+
+    // Instantly follow
     setFollowLoading(true)
-    const prev = isFollowing
-    setIsFollowing(!isFollowing)
+    setIsFollowing(true)
     try {
       const supabase = createClient()
-      if (prev) {
-        await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', author.id)
-      } else {
-        await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: author.id })
-      }
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: author.id })
     } catch (e) {
       console.error(e)
-      setIsFollowing(prev)
+      setIsFollowing(false)
+    }
+    setFollowLoading(false)
+  }
+
+  async function confirmUnfollow() {
+    setShowUnfollowConfirm(false)
+    setFollowLoading(true)
+    setIsFollowing(false)
+    try {
+      const supabase = createClient()
+      await supabase.from('follows').delete().eq('follower_id', currentUser!.id).eq('following_id', author.id)
+    } catch (e) {
+      console.error(e)
+      setIsFollowing(true)
     }
     setFollowLoading(false)
   }
@@ -191,25 +209,62 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
                 <a href={`/u/${author.handle}`} style={{ color: 'inherit', textDecoration: 'none' }}>@{author.handle}</a>
               </span>
               {currentUser && !isOwnRoast && (
-                <button
-                  onClick={(e) => { e.preventDefault(); handleFollowToggle(); }}
-                  disabled={followLoading}
-                  style={{
-                    background: isFollowing ? 'transparent' : authorColor,
-                    color: isFollowing ? authorColor : '#fff',
-                    border: `1px solid ${authorColor}`,
-                    borderRadius: 'var(--radius-full)',
-                    padding: '1px 8px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleFollowToggle(); }}
+                    disabled={followLoading}
+                    style={{
+                      background: isFollowing ? 'transparent' : authorColor,
+                      color: isFollowing ? authorColor : '#fff',
+                      border: `1px solid ${authorColor}`,
+                      borderRadius: 'var(--radius-full)',
+                      padding: '1px 8px',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+
+                  <AnimatePresence>
+                    {showUnfollowConfirm && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                        style={{
+                          position: 'absolute', top: '100%', left: 0, marginTop: 8,
+                          background: 'var(--bg-elevated)', border: `1px solid ${authorColor}50`,
+                          borderRadius: 'var(--radius-md)', padding: 12, zIndex: 100,
+                          minWidth: 160, boxShadow: `0 8px 32px ${authorColor}30`,
+                          backdropFilter: 'blur(12px)'
+                        }}
+                      >
+                        <p style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, textAlign: 'center', color: 'var(--text-primary)' }}>
+                          Unfollow @{author.handle}?
+                        </p>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); setShowUnfollowConfirm(false); }}
+                            style={{ flex: 1, padding: '6px', fontSize: 11, background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); confirmUnfollow(); }}
+                            style={{ flex: 1, padding: '6px', fontSize: 11, background: `${authorColor}20`, border: `1px solid ${authorColor}50`, borderRadius: 'var(--radius-sm)', color: authorColor, fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            Unfollow
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
               <span className="aura-badge" style={{ fontSize: 10, padding: '2px 8px', color: authorColor, borderColor: `${authorColor}40`, background: `${authorColor}12` }}>
                 <Zap size={9} /> {formatAura(author.aura_points)}

@@ -7,8 +7,9 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import FeedNav from '@/components/FeedNav'
 import RoastCard from '@/components/RoastCard'
-import { fetchGlobalFeed, fetchFollowingFeed, getCurrentProfile, getMyFollowingIds } from '@/lib/api'
+import { fetchGlobalFeed, fetchFollowingFeed, getCurrentProfile, getMyFollowingIds, getRecommendedProfiles } from '@/lib/api'
 import type { RoastWithProfiles, Profile } from '@/lib/types'
+import { formatAura, handleToColor } from '@/lib/utils'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 
 function WelcomeBanner() {
@@ -47,24 +48,74 @@ function WelcomeBanner() {
   )
 }
 
-function EmptyFeed({ tab }: { tab: 'global' | 'following' }) {
+function EmptyFeed({ tab, currentUser, onFollow }: { tab: 'global' | 'following', currentUser?: Profile | null, onFollow?: (id: string) => void }) {
+  const [recommendations, setRecommendations] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (tab === 'following' && currentUser) {
+      getRecommendedProfiles(currentUser.id, 5).then(res => {
+        setRecommendations(res)
+        setLoading(false)
+      })
+    }
+  }, [tab, currentUser])
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="glass-card" style={{ padding: '60px 32px', textAlign: 'center' }}>
+      className="glass-card" style={{ padding: '40px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>
         {tab === 'following' ? '👥' : '🔥'}
       </div>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
-        {tab === 'following' ? 'No roasts from your crew yet' : 'The arena is quiet...'}
+        {tab === 'following' ? 'Your crew is empty' : 'The arena is quiet...'}
       </h2>
       <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, maxWidth: 340, margin: '0 auto 24px' }}>
         {tab === 'following'
-          ? 'Follow some roasters and their posts will appear here.'
+          ? 'Follow some top roasters below and their posts will appear here.'
           : 'Be the first to break the silence. Drop a roast.'}
       </p>
-      <a href="/roast/new" className="btn-primary" style={{ fontSize: 14 }}>
-        <Flame size={16} /> Drop a Roast
-      </a>
+      
+      {tab === 'global' && (
+        <a href="/roast/new" className="btn-primary" style={{ fontSize: 14, display: 'inline-flex' }}>
+          <Flame size={16} /> Drop a Roast
+        </a>
+      )}
+
+      {tab === 'following' && !loading && recommendations.length > 0 && (
+        <div style={{ textAlign: 'left', marginTop: 32, background: 'rgba(0,0,0,0.2)', padding: 16, borderRadius: 'var(--radius-md)' }}>
+          <h3 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: 12 }}>Suggested Roasters</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {recommendations.map(p => {
+              const color = handleToColor(p.handle)
+              return (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: `${color}25`, border: `1px solid ${color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontWeight: 700, fontSize: 14 }}>
+                      {p.handle[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <a href={`/u/${p.handle}`} style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>@{p.handle}</a>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatAura(p.aura_points)} aura</div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      const supabase = createClient()
+                      await supabase.from('follows').insert({ follower_id: currentUser!.id, following_id: p.id })
+                      onFollow?.(p.id)
+                      setRecommendations(prev => prev.filter(r => r.id !== p.id))
+                    }}
+                    style={{ background: 'transparent', border: `1px solid ${color}`, color: color, padding: '4px 12px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Follow
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -260,7 +311,13 @@ export default function FeedPage() {
         {!loading && !error && (
           <>
             {roasts.length === 0 ? (
-              <EmptyFeed tab={tab} />
+              <EmptyFeed tab={tab} currentUser={profile} onFollow={(id) => {
+                setFollowingIds(prev => {
+                  const next = new Set(prev)
+                  next.add(id)
+                  return next
+                })
+              }} />
             ) : (
               <AnimatePresence mode="popLayout">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

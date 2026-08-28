@@ -78,6 +78,16 @@ function RulesContent() {
           </p>
         </motion.div>
 
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <Zap size={24} style={{ color: 'var(--aura-orange)' }} />
+            <h2 style={{ fontSize: 20, fontWeight: 700 }}>4. One Account Per Person</h2>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            ROAST'em is a free, independently developed project. To preserve our limited database storage and ensure a fair Aura economy, <strong>alt accounts are strictly prohibited</strong>. Creating multiple accounts to manipulate your feed, hoard Aura, or harass others will result in all your accounts being permanently banned.
+          </p>
+        </motion.div>
+
       </div>
 
       {isOnboarding ? (

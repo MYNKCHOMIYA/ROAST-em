@@ -121,6 +121,27 @@ export async function getMyFollowingIds(userId: string): Promise<string[]> {
   return (data ?? []).map((f) => f.following_id)
 }
 
+/** Get recommended profiles to follow */
+export async function getRecommendedProfiles(userId: string, limit = 5): Promise<Profile[]> {
+  const supabase = createClient()
+  
+  const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', userId)
+  const followingIds = (follows ?? []).map(f => f.following_id)
+  
+  const excludeIds = [...followingIds, userId]
+  const excludeStr = `(${excludeIds.join(',')})`
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .not('id', 'in', excludeStr)
+    .order('aura_points', { ascending: false })
+    .limit(limit)
+    
+  if (error) throw error
+  return (data ?? []) as Profile[]
+}
+
 /** Create a new roast — goes through server API for rate limiting + moderation */
 export async function createRoast(
   _authorId: string,  // kept for API compatibility; server reads auth from cookie
