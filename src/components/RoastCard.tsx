@@ -67,11 +67,13 @@ function Avatar({ handle, size = 36 }: { handle: string; size?: number }) {
   )
 }
 
-export default function RoastCard({ roast, currentUser, onLiked }: RoastCardProps) {
+export default function RoastCard({ roast, currentUser, onLiked, initialIsFollowing = false }: RoastCardProps) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [likeError, setLikeError] = useState('')
   const [localLikeCount, setLocalLikeCount] = useState(roast.aura_gained)
+  const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
+  const [followLoading, setFollowLoading] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [isReported, setIsReported] = useState(false)
   const [showReportMenu, setShowReportMenu] = useState(false)
@@ -103,6 +105,29 @@ export default function RoastCard({ roast, currentUser, onLiked }: RoastCardProp
     } finally {
       setLikeLoading(false)
     }
+  }
+
+  async function handleFollowToggle() {
+    if (!currentUser) {
+      window.location.href = '/auth/login'
+      return
+    }
+    if (followLoading) return
+    setFollowLoading(true)
+    const prev = isFollowing
+    setIsFollowing(!isFollowing)
+    try {
+      const supabase = createClient()
+      if (prev) {
+        await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', author.id)
+      } else {
+        await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: author.id })
+      }
+    } catch (e) {
+      console.error(e)
+      setIsFollowing(prev)
+    }
+    setFollowLoading(false)
   }
 
   async function handleShare() {
@@ -160,8 +185,29 @@ export default function RoastCard({ roast, currentUser, onLiked }: RoastCardProp
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: authorColor }}>
-                @{author.handle}
+                <a href={`/u/${author.handle}`} style={{ color: 'inherit', textDecoration: 'none' }}>@{author.handle}</a>
               </span>
+              {currentUser && !isOwnRoast && (
+                <button
+                  onClick={(e) => { e.preventDefault(); handleFollowToggle(); }}
+                  disabled={followLoading}
+                  style={{
+                    background: isFollowing ? 'transparent' : authorColor,
+                    color: isFollowing ? authorColor : '#fff',
+                    border: `1px solid ${authorColor}`,
+                    borderRadius: 'var(--radius-full)',
+                    padding: '1px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
+                </button>
+              )}
               <span className="aura-badge" style={{ fontSize: 10, padding: '2px 8px', color: authorColor, borderColor: `${authorColor}40`, background: `${authorColor}12` }}>
                 <Zap size={9} /> {formatAura(author.aura_points)}
               </span>

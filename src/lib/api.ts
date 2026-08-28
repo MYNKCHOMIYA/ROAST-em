@@ -110,6 +110,17 @@ export async function searchByHandle(query: string): Promise<Profile[]> {
   return (data ?? []) as Profile[]
 }
 
+/** Get a list of IDs the current user is following */
+export async function getMyFollowingIds(userId: string): Promise<string[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', userId)
+
+  return (data ?? []).map((f) => f.following_id)
+}
+
 /** Create a new roast — goes through server API for rate limiting + moderation */
 export async function createRoast(
   _authorId: string,  // kept for API compatibility; server reads auth from cookie

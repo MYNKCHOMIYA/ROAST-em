@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import FeedNav from '@/components/FeedNav'
 import RoastCard from '@/components/RoastCard'
-import { fetchGlobalFeed, fetchFollowingFeed, getCurrentProfile } from '@/lib/api'
+import { fetchGlobalFeed, fetchFollowingFeed, getCurrentProfile, getMyFollowingIds } from '@/lib/api'
 import type { RoastWithProfiles, Profile } from '@/lib/types'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 
@@ -85,6 +85,7 @@ export default function FeedPage() {
   const [tab, setTab] = useState<'global' | 'following'>('global')
   const [roasts, setRoasts] = useState<RoastWithProfiles[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(0)
@@ -98,7 +99,12 @@ export default function FeedPage() {
   // Load current user profile
   useEffect(() => {
     if (!configured) return
-    getCurrentProfile().then(setProfile).catch(() => {})
+    getCurrentProfile().then(p => {
+      setProfile(p)
+      if (p) {
+        getMyFollowingIds(p.id).then(ids => setFollowingIds(new Set(ids)))
+      }
+    }).catch(() => {})
   }, [configured])
 
   const loadFeed = useCallback(async (currentTab: typeof tab, currentPage: number, replace = false) => {
@@ -258,11 +264,13 @@ export default function FeedPage() {
             ) : (
               <AnimatePresence mode="popLayout">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {roasts.map((roast) => (
+                  {roasts.map((roast, i) => (
                     <RoastCard
-                      key={roast.id}
+                      key={`${roast.id}-${tab}`}
                       roast={roast}
+                      index={i}
                       currentUser={profile}
+                      initialIsFollowing={profile ? followingIds.has(roast.author_id) : false}
                       onLiked={() => {}}
                     />
                   ))}
