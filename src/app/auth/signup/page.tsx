@@ -36,15 +36,18 @@ function OdometerDigit({ digit }: { digit: string }) {
   )
 }
 
-function AgeOdometer({ age, setAge }: { age: number, setAge: (a: number) => void }) {
-  const padded = age.toString().padStart(2, '0')
+function BirthYearOdometer({ year, setYear }: { year: number, setYear: (y: number) => void }) {
+  const padded = year.toString().padStart(4, '0')
+  const currentYear = new Date().getFullYear()
+  const age = currentYear - year
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '24px 0' }}>
       <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 12 }}>
-        Confirm Your Age
+        Confirm Your Birth Year
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button type="button" onClick={() => setAge(Math.max(1, age - 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)' }}>
+        <button type="button" onClick={() => setYear(Math.max(1900, year - 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
           <Minus size={20} />
         </button>
         <div style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.4)', padding: '8px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${age >= 18 ? 'var(--aura-pink)' : 'var(--border-subtle)'}`, boxShadow: age >= 18 ? '0 0 20px rgba(255, 60, 172, 0.2)' : 'none', transition: 'all 0.3s' }}>
@@ -52,7 +55,7 @@ function AgeOdometer({ age, setAge }: { age: number, setAge: (a: number) => void
             <OdometerDigit key={i} digit={char} />
           ))}
         </div>
-        <button type="button" onClick={() => setAge(Math.min(99, age + 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)' }}>
+        <button type="button" onClick={() => setYear(Math.min(currentYear, year + 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}>
           <Plus size={20} />
         </button>
       </div>
@@ -67,12 +70,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [handle, setHandle] = useState(randomHandle)
-  const [age, setAge] = useState(17) // Start at 17 to encourage interaction
+  const currentYear = new Date().getFullYear()
+  const [birthYear, setBirthYear] = useState(currentYear - 17) // Start at 17 years old to encourage interaction
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const ageConfirmed = age >= 18
+  const ageConfirmed = (currentYear - birthYear) >= 18
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -223,7 +227,7 @@ export default function SignupPage() {
               </div>
 
               {/* Age Odometer */}
-              <AgeOdometer age={age} setAge={setAge} />
+              <BirthYearOdometer year={birthYear} setYear={setBirthYear} />
 
               {/* Age Gate Checkbox */}
               <div style={{ marginBottom: 24 }}>
