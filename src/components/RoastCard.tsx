@@ -77,7 +77,10 @@ export default function RoastCard({ roast, currentUser, onLiked }: RoastCardProp
   const [showReportMenu, setShowReportMenu] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
 
-  const authorColor = handleToColor(roast.author.handle)
+  const author = roast.author ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null }
+  const target = roast.target ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null }
+
+  const authorColor = handleToColor(author.handle)
   const isOwnRoast = currentUser?.id === roast.author_id
   const isTarget = currentUser?.id === roast.target_id
   const comebackActive = roast.comeback_window_ends_at && new Date(roast.comeback_window_ends_at) > new Date()
@@ -153,24 +156,24 @@ export default function RoastCard({ roast, currentUser, onLiked }: RoastCardProp
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar handle={roast.author.handle} />
+          <Avatar handle={author.handle} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: authorColor }}>
-                @{roast.author.handle}
+                @{author.handle}
               </span>
               <span className="aura-badge" style={{ fontSize: 10, padding: '2px 8px', color: authorColor, borderColor: `${authorColor}40`, background: `${authorColor}12` }}>
-                <Zap size={9} /> {formatAura(roast.author.aura_points)}
+                <Zap size={9} /> {formatAura(author.aura_points)}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, margin: '2px 0 0 0' }}>
               <ChevronRight size={11} style={{ color: 'var(--text-secondary)' }} />
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>roasting</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                @{roast.target.handle}
+                @{target.handle}
               </span>
               <span className="aura-badge" style={{ fontSize: 10, padding: '2px 8px' }}>
-                <Zap size={9} /> {formatAura(roast.target.aura_points)}
+                <Zap size={9} /> {formatAura(target.aura_points)}
               </span>
             </div>
           </div>
