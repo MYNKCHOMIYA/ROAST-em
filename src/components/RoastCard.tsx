@@ -6,10 +6,13 @@ import { Flame, ChevronRight, Zap, Clock, MessageCircle, Share2, Flag, MoreHoriz
 import type { RoastWithProfiles, Profile } from '@/lib/types'
 import { likeRoast, reportRoast } from '@/lib/api'
 import { formatAura, handleToColor, timeAgo, cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 interface RoastCardProps {
   roast: RoastWithProfiles
   currentUser: Profile | null
+  index?: number
+  initialIsFollowing?: boolean
   onLiked?: (roastId: string) => void
 }
 
@@ -67,7 +70,7 @@ function Avatar({ handle, size = 36 }: { handle: string; size?: number }) {
   )
 }
 
-export default function RoastCard({ roast, currentUser, onLiked, initialIsFollowing = false }: RoastCardProps) {
+export default function RoastCard({ roast, index = 0, currentUser, onLiked, initialIsFollowing = false }: RoastCardProps) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [likeError, setLikeError] = useState('')
