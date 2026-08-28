@@ -53,7 +53,7 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
               <div className="aura-badge" style={{ fontSize: 12 }}>
                 <Zap size={11} style={{ color: 'var(--aura-yellow)' }} />
                 <span style={{ color: 'var(--aura-yellow)' }}>{formatAura(profile.aura_points)}</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>aura</span>
+                <span className="hidden sm:inline" style={{ color: 'var(--text-secondary)', fontSize: 10 }}>aura</span>
               </div>
             )}
 
@@ -89,7 +89,7 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
             <a
               id="post-roast-btn"
               href="/roast/new"
-              className="btn-primary"
+              className="btn-primary hidden sm:flex"
               style={{ padding: '7px 14px', fontSize: 13, gap: 6 }}
             >
               <PenLine size={14} />
