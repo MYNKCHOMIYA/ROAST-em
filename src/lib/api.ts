@@ -100,10 +100,11 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 /** Search for a profile by handle */
 export async function searchByHandle(query: string): Promise<Profile[]> {
   const supabase = createClient()
+  const cleanQuery = query.replace(/^@/, '')
   const { data, error } = await supabase
     .from('profiles')
     .select('id, handle, aura_points, avatar_url')
-    .ilike('handle', `%${query}%`)
+    .ilike('handle', `%${cleanQuery}%`)
     .limit(10)
   if (error) throw error
   return (data ?? []) as Profile[]

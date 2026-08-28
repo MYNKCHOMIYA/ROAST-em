@@ -50,6 +50,7 @@ function NewRoastForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const comebackRoastId = searchParams.get('comeback')
+  const initialTargetHandle = searchParams.get('targetHandle')
 
   const [target, setTarget] = useState<Profile | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,12 +62,19 @@ function NewRoastForm() {
   const [authorProfile, setAuthorProfile] = useState<Profile | null>(null)
   const [remaining, setRemaining] = useState<number | null>(null)
 
-  // Load author profile on mount
+  // Load author profile and check for initial target on mount
   useEffect(() => {
     getCurrentProfile().then((p) => {
       setAuthorProfile(p)
     }).catch(() => {})
-  }, [])
+
+    if (initialTargetHandle) {
+      searchByHandle(initialTargetHandle).then((results) => {
+        const match = results.find(r => r.handle.toLowerCase() === initialTargetHandle.toLowerCase())
+        if (match) setTarget(match)
+      }).catch(() => {})
+    }
+  }, [initialTargetHandle])
 
   const charsLeft = MAX_CHARS - content.length
   const isOverLimit = charsLeft < 0
