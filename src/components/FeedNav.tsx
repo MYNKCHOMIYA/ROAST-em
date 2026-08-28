@@ -143,6 +143,12 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
                     >
                       ✏️ Edit Profile
                     </a>
+                    <a href="/rules" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 'var(--radius-sm)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: 13 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-glass)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      📖 Rulebook
+                    </a>
                     <a href="/leaderboard" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 'var(--radius-sm)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: 13 }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-glass)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

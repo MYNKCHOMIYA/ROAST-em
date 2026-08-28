@@ -33,8 +33,8 @@ $$;
 -- 4. Schedule the deletion function via pg_cron (Runs daily at midnight)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Remove the job if it already exists to prevent duplicates on re-run
-SELECT cron.unschedule('daily-account-cleanup');
+-- Remove the job if it already exists to prevent duplicates on re-run (commented out for first run)
+-- SELECT cron.unschedule('daily-account-cleanup');
 
 SELECT cron.schedule(
   'daily-account-cleanup',

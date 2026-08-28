@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import ArenaToaster from '@/components/ArenaToaster'
 import './globals.css'
 
 const APP_URL = 'https://roastem.app'
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="noise-overlay">
         {children}
+        <ArenaToaster />
       </body>
     </html>
   )

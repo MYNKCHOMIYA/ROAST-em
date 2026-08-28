@@ -124,8 +124,22 @@ export default function SignupPage() {
       else setError(profileError.message)
       return
     }
+    // 3. Broadcast to ArenaToaster
+    const channel = supabase.channel('arena-global')
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'new_user',
+          payload: { handle: handle.trim() }
+        })
+      }
+    })
     
-    router.push('/feed?welcome=1')
+    // Tiny delay to ensure broadcast fires before unmount
+    setTimeout(() => {
+      router.push('/rules?onboarding=true')
+    }, 200)
   }
 
   return (
