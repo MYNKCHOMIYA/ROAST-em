@@ -86,15 +86,17 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
             </div>
 
             {/* Post roast CTA */}
-            <a
-              id="post-roast-btn"
-              href="/roast/new"
-              className="btn-primary hidden sm:flex"
-              style={{ padding: '7px 14px', fontSize: 13, gap: 6 }}
-            >
-              <PenLine size={14} />
-              Roast
-            </a>
+            <div className="hidden sm:flex">
+              <a
+                id="post-roast-btn"
+                href="/roast/new"
+                className="btn-primary"
+                style={{ padding: '7px 14px', fontSize: 13, gap: 6 }}
+              >
+                <PenLine size={14} />
+                Roast
+              </a>
+            </div>
 
             {/* Avatar / profile dropdown */}
             {profile && (

@@ -28,7 +28,7 @@ export async function fetchGlobalFeed(page = 0, limit = 20): Promise<RoastWithPr
 
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as RoastWithProfiles[]
+  return ((data ?? []) as RoastWithProfiles[]).filter(r => r.author !== null)
 }
 
 /** Fetch feed for a specific user's following list */
@@ -67,7 +67,7 @@ export async function fetchFollowingFeed(userId: string, page = 0, limit = 20): 
 
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as RoastWithProfiles[]
+  return ((data ?? []) as RoastWithProfiles[]).filter(r => r.author !== null)
 }
 
 /** Like a roast — triggers ACID aura transfer via RPC */
