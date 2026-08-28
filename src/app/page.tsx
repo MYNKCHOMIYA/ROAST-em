@@ -191,13 +191,13 @@ export default function LandingPage() {
       </div>
 
       {/* Nav */}
-      <div className="fixed top-6 left-0 right-0 z-50 px-6 pointer-events-none" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="fixed top-4 sm:top-6 left-0 right-0 z-50 px-3 sm:px-6 pointer-events-none" style={{ display: 'flex', justifyContent: 'center' }}>
         <nav 
           className="glass pointer-events-auto flex items-center justify-between w-full" 
           style={{ 
             maxWidth: 1100, 
-            height: 72, 
-            padding: '0 24px',
+            height: 64, 
+            padding: '0 16px',
             borderRadius: 'var(--radius-full)',
             border: '1px solid var(--border-subtle)',
             background: 'rgba(0, 0, 0, 0.53)',
@@ -209,26 +209,26 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2 sm:gap-3"
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded-full" style={{ background: 'rgba(45, 161, 194, 0.1)', border: '1px solid rgba(45, 161, 194, 0.2)' }}>
-              <Flame size={20} style={{ color: 'var(--aura-pink)' }} />
+            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0" style={{ background: 'rgba(45, 161, 194, 0.1)', border: '1px solid rgba(45, 161, 194, 0.2)' }}>
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: 'var(--aura-pink)' }} />
             </div>
-            <span className="text-xl font-bold gradient-text-pink" style={{ letterSpacing: '-0.03em' }}>ROAST&apos;em</span>
+            <span className="text-lg sm:text-xl font-bold gradient-text-pink" style={{ letterSpacing: '-0.03em' }}>ROAST&apos;em</span>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4"
+            className="flex items-center gap-2 sm:gap-4"
           >
-            <a href="/leaderboard" className="text-sm font-semibold hover:text-white transition-colors" style={{ color: 'var(--text-secondary)', padding: '8px 12px' }}>
+            <a href="/leaderboard" className="hidden sm:inline-block text-sm font-semibold hover:text-white transition-colors" style={{ color: 'var(--text-secondary)', padding: '8px 12px' }}>
               🏆 Leaderboard
             </a>
-            <a href="/auth/login" className="text-sm font-semibold hover:text-white transition-colors" style={{ color: 'var(--text-secondary)', padding: '8px 12px' }}>
+            <a href="/auth/login" className="text-xs sm:text-sm font-semibold hover:text-white transition-colors whitespace-nowrap" style={{ color: 'var(--text-secondary)', padding: '6px 12px' }}>
               Sign In
             </a>
-            <a href="/auth/signup" className="btn-primary" style={{ padding: '10px 24px', fontSize: 14 }}>
-              Try for Free
+            <a href="/auth/signup" className="btn-primary whitespace-nowrap" style={{ padding: '8px 16px', fontSize: 13 }}>
+              Try Free
             </a>
           </motion.div>
         </nav>
