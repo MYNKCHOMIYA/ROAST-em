@@ -47,16 +47,16 @@ function BirthYearOdometer({ year, setYear }: { year: number, setYear: (y: numbe
         Confirm Your Birth Year
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button type="button" onClick={() => setYear(Math.max(1900, year - 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
-          <Minus size={20} color="white" />
+        <button type="button" onClick={() => setYear(Math.max(1900, year - 1))} className="btn-ghost" style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Minus size={24} color="white" />
         </button>
         <div style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.4)', padding: '8px 16px', borderRadius: 'var(--radius-md)', border: `1px solid ${age >= 18 ? 'var(--aura-pink)' : 'var(--border-subtle)'}`, boxShadow: age >= 18 ? '0 0 20px rgba(255, 60, 172, 0.2)' : 'none', transition: 'all 0.3s' }}>
           {padded.split('').map((char, i) => (
             <OdometerDigit key={i} digit={char} />
           ))}
         </div>
-        <button type="button" onClick={() => setYear(Math.min(currentYear, year + 1))} className="btn-ghost" style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
-          <Plus size={20} color="white" />
+        <button type="button" onClick={() => setYear(Math.min(currentYear, year + 1))} className="btn-ghost" style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={24} color="white" />
         </button>
       </div>
     </div>
