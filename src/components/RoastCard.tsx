@@ -8,6 +8,7 @@ import { likeRoast, reportRoast } from '@/lib/api'
 import { formatAura, handleToColor, timeAgo, cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { RoastText } from './RoastText'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 function CooldownTimer({ endsAt, onComplete }: { endsAt: number, onComplete: () => void }) {
   const [timeLeft, setTimeLeft] = useState(Math.max(0, endsAt - Date.now()))
@@ -119,6 +120,9 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
   const [isReported, setIsReported] = useState(false)
   const [showReportMenu, setShowReportMenu] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
+
+  const reportMenuRef = useRef<HTMLDivElement>(null)
+  useClickOutside(reportMenuRef, () => setShowReportMenu(false))
 
   const author = roast.author?.is_deleted
     ? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null, is_deleted: true }
@@ -336,7 +340,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
             
             {/* Report Menu */}
             {!isOwnRoast && currentUser && (
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }} ref={reportMenuRef}>
                 <button
                   onClick={() => setShowReportMenu(!showReportMenu)}
                   style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', padding: 2 }}

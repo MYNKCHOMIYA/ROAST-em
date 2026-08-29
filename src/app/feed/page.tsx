@@ -11,6 +11,7 @@ import { fetchGlobalFeed, fetchFollowingFeed, getCurrentProfile, getMyFollowingI
 import type { RoastWithProfiles, Profile } from '@/lib/types'
 import { formatAura, handleToColor } from '@/lib/utils'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
+import { PullToRefresh } from '@/components/PullToRefresh'
 
 function WelcomeBanner() {
   const searchParams = useSearchParams()
@@ -214,6 +215,7 @@ export default function FeedPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={async () => { await handleRefresh() }}>
     <main style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}>
       {/* Background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
@@ -330,7 +332,6 @@ export default function FeedPage() {
                       initialIsFollowing={profile ? followingIds.has(roast.author_id) : false}
                       onLiked={() => {}}
                       onUnfollow={(authorId) => {
-                        // Immediately remove the user's roasts from the feed if we're in the 'following' tab
                         if (tab === 'following') {
                           setRoasts(prev => prev.filter(r => r.author_id !== authorId))
                         }
@@ -375,5 +376,6 @@ export default function FeedPage() {
         Roast
       </motion.a>
     </main>
+    </PullToRefresh>
   )
 }
