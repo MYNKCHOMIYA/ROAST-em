@@ -227,7 +227,9 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar handle={author.handle} avatarUrl={author.avatar_url} />
+          <a href={`/u/${author.handle}`}>
+            <Avatar handle={author.handle} avatarUrl={author.avatar_url} />
+          </a>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: authorColor }}>
@@ -299,7 +301,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
               <ChevronRight size={11} style={{ color: 'var(--text-secondary)' }} />
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>roasting</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                @{target.handle}
+                <a href={`/u/${target.handle}`} style={{ color: 'inherit', textDecoration: 'none' }}>@{target.handle}</a>
               </span>
               <span className="aura-badge" style={{ fontSize: 10, padding: '2px 8px' }}>
                 <Zap size={9} /> {formatAura(target.aura_points)}
