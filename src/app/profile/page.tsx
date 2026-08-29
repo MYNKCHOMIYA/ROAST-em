@@ -19,6 +19,7 @@ export default function MyProfilePage() {
   const [stats, setStats] = useState({ followers: 0, following: 0, roastsDropped: 0, gotRoasted: 0 })
   const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null)
   const [restoring, setRestoring] = useState(false)
+  const [tab, setTab] = useState<'roasts' | 'roasted'>('roasts')
 
   async function handleLogout() {
     const supabase = createClient()
@@ -31,6 +32,19 @@ export default function MyProfilePage() {
     await restoreAccount()
     setProfile(prev => prev ? { ...prev, is_deleted: false, deleted_at: null } : prev)
     setRestoring(false)
+  }
+
+  async function loadRoasted() {
+    if (!profile) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('roasts')
+      .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
+      .eq('target_id', profile.id)
+      .eq('is_flagged', false)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setRoasts((data ?? []) as RoastWithProfiles[])
   }
 
   useEffect(() => {
@@ -179,16 +193,39 @@ export default function MyProfilePage() {
           </div>
         </div>
 
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 14 }}>🔥 Your Roasts</div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', marginBottom: 20 }}>
+          {(['roasts', 'roasted'] as const).map((t) => (
+            <button key={t} id={`my-profile-tab-${t}`}
+              onClick={() => { setTab(t); if (t === 'roasted') loadRoasted(); else {
+                const supabase = createClient()
+                supabase.from('roasts').select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)').eq('author_id', profile!.id).order('created_at', { ascending: false }).limit(20).then(({ data }) => setRoasts((data ?? []) as RoastWithProfiles[]))
+              }}}
+              style={{
+                flex: 1, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: tab === t ? 700 : 400,
+                color: tab === t ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderBottom: `2px solid ${tab === t ? color : 'transparent'}`,
+                transition: 'all 0.2s', fontFamily: 'Space Grotesk, sans-serif',
+              }}
+            >
+              {t === 'roasts' ? '🔥 Your Roasts' : '😵 Got Roasted'}
+            </button>
+          ))}
+        </div>
 
         {roasts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card"
             style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🌟</div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>You haven&apos;t roasted anyone yet. The arena awaits.</p>
-            <a href="/roast/new" className="btn-primary" style={{ fontSize: 13 }}>
-              <Flame size={14} /> Drop your first roast
-            </a>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>{tab === 'roasts' ? '🌟' : '🛡️'}</div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
+              {tab === 'roasts' ? "You haven't roasted anyone yet. The arena awaits." : "Nobody dared to roast you yet."}
+            </p>
+            {tab === 'roasts' && (
+              <a href="/roast/new" className="btn-primary" style={{ fontSize: 13, display: 'inline-flex' }}>
+                <Flame size={14} /> Drop your first roast
+              </a>
+            )}
           </motion.div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
