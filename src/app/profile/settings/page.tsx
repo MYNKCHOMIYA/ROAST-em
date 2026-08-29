@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [handle, setHandle] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [email, setEmail] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
@@ -24,6 +25,8 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
       
+      if (user.email) setEmail(user.email)
+
       const { data: prof } = await supabase.from('profiles').select('handle').eq('id', user.id).single()
       if (prof) setHandle(prof.handle)
     }
@@ -42,6 +45,10 @@ export default function SettingsPage() {
 
   async function handleUpdatePassword(e: React.FormEvent) {
     e.preventDefault()
+    if (password !== confirmPassword) {
+      setMessage(prev => ({ ...prev, password: 'Passwords do not match.' }))
+      return
+    }
     setLoading(prev => ({ ...prev, password: true }))
     setMessage(prev => ({ ...prev, password: '' }))
     const res = await updatePassword(password)
@@ -50,6 +57,7 @@ export default function SettingsPage() {
     else {
       setMessage(prev => ({ ...prev, password: 'Password securely updated!' }))
       setPassword('')
+      setConfirmPassword('')
     }
   }
 
@@ -123,10 +131,14 @@ export default function SettingsPage() {
               <div>
                 <label style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>New Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
+                  style={{ width: '100%', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'white', outline: 'none', marginBottom: 12 }} />
+                  
+                <label style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>Confirm New Password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••"
                   style={{ width: '100%', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'white', outline: 'none' }} />
               </div>
-              {message.password && <div style={{ fontSize: 13, color: message.password.includes('Error') ? 'red' : 'var(--aura-cyan)' }}>{message.password}</div>}
-              <button type="submit" disabled={loading.password || !password} className="btn-ghost" style={{ alignSelf: 'flex-start', padding: '8px 16px', fontSize: 14 }}>
+              {message.password && <div style={{ fontSize: 13, color: message.password.includes('Error') || message.password.includes('not match') ? 'red' : 'var(--aura-cyan)' }}>{message.password}</div>}
+              <button type="submit" disabled={loading.password || !password || !confirmPassword} className="btn-ghost" style={{ alignSelf: 'flex-start', padding: '8px 16px', fontSize: 14 }}>
                 {loading.password ? <Loader2 size={16} className="animate-spin" /> : 'Update Password'}
               </button>
             </form>
@@ -142,7 +154,7 @@ export default function SettingsPage() {
             
             <form onSubmit={handleUpdateEmail} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>New Email</label>
+                <label style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>Email Address</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com"
                   style={{ width: '100%', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'white', outline: 'none' }} />
               </div>

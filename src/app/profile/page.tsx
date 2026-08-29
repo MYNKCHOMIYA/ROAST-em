@@ -150,6 +150,9 @@ export default function MyProfilePage() {
               <button onClick={handleLogout} className="btn-ghost" title="Log Out" style={{ fontSize: 13, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'rgba(255, 255, 255, 0.05)' }}>
                 <LogOut size={16} />
               </button>
+              <a href="/profile/settings" className="btn-ghost" title="Settings" style={{ fontSize: 13, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'rgba(255, 255, 255, 0.05)' }}>
+                <Settings size={16} />
+              </a>
               <a href="/profile/edit" className="btn-ghost" style={{ fontSize: 13, padding: '8px 16px' }}>
                 Edit Profile
               </a>
