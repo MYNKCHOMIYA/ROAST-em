@@ -233,8 +233,11 @@ export default function UserProfilePage() {
                     id={`follow-${profile!.handle}`}
                     onClick={handleFollow}
                     disabled={followLoading || isBlocked}
-                    className="btn-ghost"
-                    style={{ fontSize: 13, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
+                    className={isFollowing ? 'btn-ghost' : 'btn-primary'}
+                    style={{ 
+                      fontSize: 13, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6,
+                      ...(isFollowing ? { border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' } : {})
+                    }}
                   >
                     {followLoading
                       ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />

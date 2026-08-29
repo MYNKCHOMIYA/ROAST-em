@@ -22,9 +22,31 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
   const [showNotifs, setShowNotifs] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [toastNotif, setToastNotif] = useState<Notification | null>(null)
+  const [liveAura, setLiveAura] = useState(profile?.aura_points ?? 0)
   const { notifications, unreadCount, latestNotification, markAllRead } = useNotifications(profile?.id ?? null)
 
   const avatarColor = profile ? handleToColor(profile.handle) : 'var(--aura-pink)'
+
+  useEffect(() => {
+    if (profile) setLiveAura(profile.aura_points)
+  }, [profile])
+
+  useEffect(() => {
+    if (!profile) return
+    const supabase = createClient()
+    const channel = supabase.channel(`profile-aura:${profile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profile.id}` },
+        (payload) => {
+          if (payload.new && typeof payload.new.aura_points === 'number') {
+            setLiveAura(payload.new.aura_points)
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile?.id])
 
   // Toast for new notifications
   useEffect(() => {
@@ -62,7 +84,7 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
             {profile && (
               <div className="aura-badge" style={{ fontSize: 12 }}>
                 <Zap size={11} style={{ color: 'var(--aura-yellow)' }} />
-                <span style={{ color: 'var(--aura-yellow)' }}>{formatAura(profile.aura_points)}</span>
+                <span style={{ color: 'var(--aura-yellow)' }}>{formatAura(liveAura)}</span>
                 <span className="hidden sm:inline" style={{ color: 'var(--text-secondary)', fontSize: 10 }}>aura</span>
               </div>
             )}

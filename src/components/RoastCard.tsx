@@ -9,6 +9,27 @@ import { formatAura, handleToColor, timeAgo, cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { RoastText } from './RoastText'
 
+function CooldownTimer({ endsAt, onComplete }: { endsAt: number, onComplete: () => void }) {
+  const [timeLeft, setTimeLeft] = useState(Math.max(0, endsAt - Date.now()))
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = endsAt - Date.now()
+      if (remaining <= 0) {
+        clearInterval(timer)
+        onComplete()
+      } else {
+        setTimeLeft(remaining)
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [endsAt, onComplete])
+
+  const mins = Math.floor(timeLeft / 60000)
+  const secs = Math.floor((timeLeft % 60000) / 1000)
+  return <span>{mins}:{secs.toString().padStart(2, '0')}</span>
+}
+
 interface RoastCardProps {
   roast: RoastWithProfiles
   currentUser: Profile | null
@@ -89,6 +110,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [likeError, setLikeError] = useState('')
+  const [cooldownEndsAt, setCooldownEndsAt] = useState<number | null>(null)
   const [localLikeCount, setLocalLikeCount] = useState(roast.aura_gained)
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
   const [followLoading, setFollowLoading] = useState(false)
@@ -122,12 +144,8 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
       await likeRoast(roast.id, currentUser.id, roast.author_id, roast.target_id, 10)
       setLiked(true)
       setLocalLikeCount((p) => p + 10)
+      setCooldownEndsAt(Date.now() + 5 * 60 * 1000)
       onLiked?.(roast.id)
-      
-      // Re-enable the button after the 5-minute cooldown
-      setTimeout(() => {
-        setLiked(false)
-      }, 5 * 60 * 1000)
     } catch (e: unknown) {
       setLikeError(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -241,11 +259,11 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
                     onClick={(e) => { e.preventDefault(); handleFollowToggle(); }}
                     disabled={followLoading}
                     style={{
-                      background: isFollowing ? 'transparent' : authorColor,
-                      color: isFollowing ? authorColor : '#fff',
-                      border: `1px solid ${authorColor}`,
+                      background: isFollowing ? 'rgba(255,255,255,0.05)' : 'var(--aura-cyan)',
+                      color: isFollowing ? 'var(--text-secondary)' : '#000',
+                      border: isFollowing ? '1px solid var(--border-subtle)' : 'none',
                       borderRadius: 'var(--radius-full)',
-                      padding: '1px 8px',
+                      padding: '2px 10px',
                       fontSize: 10,
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -407,7 +425,11 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
             fontSize: 13, fontFamily: 'Space Mono, monospace', fontWeight: 700,
             color: liked ? authorColor : 'var(--text-secondary)',
           }}>
-            {formatAura(localLikeCount)}
+            {liked && cooldownEndsAt ? (
+              <CooldownTimer endsAt={cooldownEndsAt} onComplete={() => { setLiked(false); setCooldownEndsAt(null); }} />
+            ) : (
+              formatAura(localLikeCount)
+            )}
           </span>
           {!liked && !isOwnRoast && (
             <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>aura</span>

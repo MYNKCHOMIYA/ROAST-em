@@ -20,6 +20,7 @@ export default function MyProfilePage() {
   const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null)
   const [restoring, setRestoring] = useState(false)
   const [tab, setTab] = useState<'roasts' | 'roasted'>('roasts')
+  const [liveAura, setLiveAura] = useState(0)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -56,6 +57,7 @@ export default function MyProfilePage() {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (!prof) { router.push('/auth/signup'); return }
       setProfile(prof as Profile)
+      setLiveAura(prof.aura_points)
 
       const [{ count: followersCount }, { count: followingCount }, { count: roastsDroppedCount }, { count: gotRoastedCount }] = await Promise.all([
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
@@ -82,6 +84,23 @@ export default function MyProfilePage() {
     }
     load()
   }, [router])
+
+  useEffect(() => {
+    if (!profile) return
+    const supabase = createClient()
+    const channel = supabase.channel(`profile-page-aura:${profile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profile.id}` },
+        (payload) => {
+          if (payload.new && typeof payload.new.aura_points === 'number') {
+            setLiveAura(payload.new.aura_points)
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile?.id])
 
   if (loading) {
     return (
@@ -176,7 +195,7 @@ export default function MyProfilePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div className="aura-badge" style={{ fontSize: 14, padding: '6px 14px', color, borderColor: `${color}40`, background: `${color}12` }}>
               <Zap size={14} style={{ color }} />
-              <span style={{ fontWeight: 800 }}>{formatAura(profile!.aura_points)}</span>
+              <span style={{ fontWeight: 800 }}>{formatAura(liveAura)}</span>
               <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>aura</span>
             </div>
           </div>
