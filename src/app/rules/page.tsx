@@ -58,8 +58,8 @@ function RulesContent() {
               <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}><strong>Earn Aura:</strong> When someone likes a roast you wrote, you gain 10 Aura. (The person who liked it spends 10 Aura).</span>
             </li>
             <li style={{ display: 'flex', gap: 12 }}>
-              <span style={{ color: 'var(--aura-pink)' }}>−</span>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}><strong>Lose Aura:</strong> If you get roasted, every like on that roast permanently drains 1 Aura from you.</span>
+              <span style={{ color: 'var(--aura-pink)' }}>⚔️</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}><strong>Underdog Rewards:</strong> If you roast someone who has MORE Aura than you, and they fail to fire back in time, the Underdog System activates. For every 100 Aura your roast gains (10 likes), you steal 10 Aura directly from them! This stops forever once your Aura surpasses theirs.</span>
             </li>
             <li style={{ display: 'flex', gap: 12 }}>
               <span style={{ color: 'var(--aura-purple)' }}>📉</span>

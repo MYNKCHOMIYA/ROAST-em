@@ -56,7 +56,7 @@ export interface Follow {
 export interface Notification {
   id: string
   user_id: string
-  type: 'roasted' | 'liked' | 'comeback' | 'followed' | 'milestone' | 'mention'
+  type: 'roasted' | 'liked' | 'comeback' | 'followed' | 'milestone' | 'mention' | 'reward_stopped'
   from_user_id: string
   roast_id: string | null
   is_read: boolean
