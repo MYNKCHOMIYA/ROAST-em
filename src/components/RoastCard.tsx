@@ -121,6 +121,11 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
       setLiked(true)
       setLocalLikeCount((p) => p + 10)
       onLiked?.(roast.id)
+      
+      // Re-enable the button after the 5-minute cooldown
+      setTimeout(() => {
+        setLiked(false)
+      }, 5 * 60 * 1000)
     } catch (e: unknown) {
       setLikeError(e instanceof Error ? e.message : 'Failed')
     } finally {
