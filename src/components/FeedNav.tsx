@@ -105,13 +105,18 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
                   id="profile-avatar-btn"
                   onClick={() => setShowMenu((v) => !v)}
                   style={{
-                    width: 34, height: 34, borderRadius: '50%',
+                    width: 34, height: 34, borderRadius: '50%', overflow: 'hidden',
                     background: `${avatarColor}25`, border: `1.5px solid ${avatarColor}60`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', color: avatarColor, fontWeight: 700, fontSize: 14,
+                    padding: 0,
                   }}
                 >
-                  {profile.handle[0].toUpperCase()}
+                  {profile.avatar_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={profile.avatar_url} alt={profile.handle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : profile.handle[0].toUpperCase()
+                  }
                 </button>
 
                 {showMenu && (

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Save, Shield, Zap, Check } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Shield, Zap, Check, Camera, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { handleToColor, formatAura } from '@/lib/utils'
@@ -19,6 +19,10 @@ export default function ProfileEditPage() {
   const [shieldError, setShieldError] = useState('')
   const [shieldSuccess, setShieldSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarSaved, setAvatarSaved] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     async function load() {
@@ -48,6 +52,46 @@ export default function ProfileEditPage() {
     if (err) { setError(err.message); return }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+    if (file.size > 2 * 1024 * 1024) { setError('Image must be under 2MB'); return }
+    if (!file.type.startsWith('image/')) { setError('Only image files are allowed'); return }
+
+    // Show local preview immediately
+    const objectUrl = URL.createObjectURL(file)
+    setAvatarPreview(objectUrl)
+    setAvatarUploading(true); setError('')
+
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()
+      const path = `avatars/${profile.id}.${ext}`
+
+      const { error: uploadErr } = await supabase.storage
+        .from('profiles')
+        .upload(path, file, { upsert: true, contentType: file.type })
+
+      if (uploadErr) throw uploadErr
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(path)
+
+      // Add cache-buster so browser loads the new image
+      const bustedUrl = `${publicUrl}?t=${Date.now()}`
+
+      await supabase.from('profiles').update({ avatar_url: bustedUrl }).eq('id', profile.id)
+      setProfile(prev => prev ? { ...prev, avatar_url: bustedUrl } : prev)
+      setAvatarSaved(true)
+      setTimeout(() => setAvatarSaved(false), 3000)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+      setAvatarPreview(null)
+    }
+    setAvatarUploading(false)
   }
 
   async function handleActivateShield() {
@@ -93,24 +137,79 @@ export default function ProfileEditPage() {
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '28px 16px 80px' }}>
 
-        {/* Profile header preview */}
-        <div className="glass-card" style={{ padding: '20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: `${color}20`, border: `2px solid ${color}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 700, color,
-          }}>
-            {profile!.handle[0].toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color }}>@{profile!.handle}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
-              <Zap size={12} style={{ color: 'var(--aura-yellow)' }} />
-              <span style={{ fontSize: 13, color: 'var(--aura-yellow)', fontWeight: 700 }}>{formatAura(profile!.aura_points)}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>aura</span>
+        {/* Profile header / avatar */}
+        <div className="glass-card" style={{ padding: '20px', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Clickable avatar */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: 72, height: 72, borderRadius: '50%', cursor: 'pointer',
+                  background: `${color}20`, border: `2px solid ${color}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 26, fontWeight: 700, color, overflow: 'hidden', position: 'relative',
+                }}
+              >
+                {avatarPreview || profile!.avatar_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={avatarPreview ?? profile!.avatar_url!} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : profile!.handle[0].toUpperCase()
+                }
+                {/* Hover overlay */}
+                <div style={{
+                  position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, borderRadius: '50%', transition: 'opacity 0.2s',
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '0' }}
+                >
+                  <Camera size={18} style={{ color: 'white' }} />
+                </div>
+              </div>
+              {/* Upload badge */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: 24, height: 24, borderRadius: '50%',
+                  background: color, border: '2px solid var(--bg-surface)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                {avatarUploading
+                  ? <Loader2 size={11} style={{ color: 'white', animation: 'spin 1s linear infinite' }} />
+                  : <Upload size={11} style={{ color: 'white' }} />
+                }
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleAvatarChange}
+              />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color }}>@{profile!.handle}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                <Zap size={12} style={{ color: 'var(--aura-yellow)' }} />
+                <span style={{ fontSize: 13, color: 'var(--aura-yellow)', fontWeight: 700 }}>{formatAura(profile!.aura_points)}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>aura</span>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6 }}>
+                {avatarSaved
+                  ? '✅ Avatar saved!'
+                  : avatarUploading
+                  ? '⏳ Uploading...'
+                  : 'Tap avatar to change photo · Max 2MB'}
+              </p>
             </div>
           </div>
+          {error && <p style={{ fontSize: 12, color: 'var(--aura-pink)', marginTop: 10 }}>⚠️ {error}</p>}
         </div>
 
         {/* Bio form */}

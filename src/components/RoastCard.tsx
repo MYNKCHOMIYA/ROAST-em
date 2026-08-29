@@ -55,9 +55,22 @@ function ComebackTimer({ endsAt }: { endsAt: string }) {
   )
 }
 
-/** Avatar circle with colored initials */
-function Avatar({ handle, size = 36 }: { handle: string; size?: number }) {
+/** Avatar circle — shows real photo if available, else colored initials */
+function Avatar({ handle, avatarUrl, size = 36 }: { handle: string; avatarUrl?: string | null; size?: number }) {
   const color = handleToColor(handle)
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={`@${handle}`}
+        style={{
+          width: size, height: size, borderRadius: '50%', flexShrink: 0,
+          objectFit: 'cover', border: `1.5px solid ${color}50`,
+        }}
+      />
+    )
+  }
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
@@ -202,7 +215,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar handle={author.handle} />
+          <Avatar handle={author.handle} avatarUrl={author.avatar_url} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: authorColor }}>
