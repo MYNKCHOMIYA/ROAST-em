@@ -28,6 +28,7 @@ export interface Roast {
   comeback_window_ends_at: string | null
   is_flagged: boolean
   has_fireback: boolean
+  comments_count: number
   created_at: string
 }
 

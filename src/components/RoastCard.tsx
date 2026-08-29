@@ -474,7 +474,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
           style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13, textDecoration: 'none' }}
         >
           <MessageCircle size={14} />
-          <span style={{ fontFamily: 'Space Mono, monospace', fontWeight: 600 }}>Reply</span>
+          <span style={{ fontFamily: 'Space Grotesk', fontWeight: 600 }}>{roast.comments_count || 0}</span>
         </a>
 
         <button

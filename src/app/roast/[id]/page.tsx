@@ -15,6 +15,41 @@ import { RoastText } from '@/components/RoastText'
 function CommentRow({ comment, currentUser }: { comment: CommentWithAuthor, currentUser: Profile | null }) {
   const author = comment.author
   const color = handleToColor(author.handle)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(comment.likes_count)
+  const [liking, setLiking] = useState(false)
+
+  useEffect(() => {
+    setLikeCount(comment.likes_count)
+  }, [comment.likes_count])
+
+  useEffect(() => {
+    async function checkLike() {
+      if (!currentUser) return
+      const supabase = createClient()
+      const { data } = await supabase.from('comment_likes').select('user_id').eq('comment_id', comment.id).eq('user_id', currentUser.id).maybeSingle()
+      if (data) setLiked(true)
+    }
+    checkLike()
+  }, [currentUser, comment.id])
+
+  async function handleLike() {
+    if (!currentUser) { window.location.href = '/auth/login'; return; }
+    if (liking) return
+    setLiking(true)
+    const supabase = createClient()
+    const newLiked = !liked
+    setLiked(newLiked)
+    setLikeCount(p => newLiked ? p + 1 : Math.max(0, p - 1))
+    
+    if (newLiked) {
+      await supabase.from('comment_likes').insert({ comment_id: comment.id, user_id: currentUser.id })
+    } else {
+      await supabase.from('comment_likes').delete().match({ comment_id: comment.id, user_id: currentUser.id })
+    }
+    setLiking(false)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
@@ -48,22 +83,12 @@ function CommentRow({ comment, currentUser }: { comment: CommentWithAuthor, curr
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <button
-            onClick={async () => {
-              if (!currentUser) { window.location.href = '/auth/login'; return; }
-              const supabase = createClient()
-              // Optimistic toggle skipped for brevity, just a basic insert
-              const { error } = await supabase.from('comment_likes').insert({ comment_id: comment.id, user_id: currentUser.id })
-              if (error) {
-                if (error.code === '23505') {
-                  // already liked, unlike
-                  await supabase.from('comment_likes').delete().match({ comment_id: comment.id, user_id: currentUser.id })
-                }
-              }
-            }}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', padding: 0 }}
+            onClick={handleLike}
+            disabled={liking}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: liked ? 'var(--aura-pink)' : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', padding: 0 }}
           >
-            <Heart size={14} />
-            <span style={{ fontFamily: 'Space Grotesk' }}>{comment.likes_count}</span>
+            <Heart size={14} fill={liked ? 'var(--aura-pink)' : 'none'} />
+            <span style={{ fontFamily: 'Space Grotesk' }}>{likeCount}</span>
           </button>
         </div>
       </div>
