@@ -21,7 +21,7 @@ export function FollowListModal({ userId, type, onClose }: FollowListModalProps)
       if (type === 'followers') {
         const { data } = await supabase
           .from('follows')
-          .select('follower:profiles!follows_follower_id_fkey(id, handle, aura_points, avatar_url)')
+          .select('follower:profiles!follows_follower_id_fkey(id, handle, aura_points, avatar_url, is_deleted)')
           .eq('following_id', userId)
           
         const profs = data?.map(d => d.follower).filter(Boolean) as any as Profile[]
@@ -29,7 +29,7 @@ export function FollowListModal({ userId, type, onClose }: FollowListModalProps)
       } else {
         const { data } = await supabase
           .from('follows')
-          .select('following:profiles!follows_following_id_fkey(id, handle, aura_points, avatar_url)')
+          .select('following:profiles!follows_following_id_fkey(id, handle, aura_points, avatar_url, is_deleted)')
           .eq('follower_id', userId)
 
         const profs = data?.map(d => d.following).filter(Boolean) as any as Profile[]
@@ -84,6 +84,26 @@ export function FollowListModal({ userId, type, onClose }: FollowListModalProps)
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {profiles.map(prof => {
+                // Soft-deleted: show masked ghost entry
+                if (prof.is_deleted) {
+                  return (
+                    <div key={prof.id} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: 0.45 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                        background: 'var(--bg-elevated)', border: '2px dashed var(--border-subtle)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 18,
+                      }}>
+                        👻
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', fontStyle: 'italic' }}>@deleted</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Account pending deletion</div>
+                      </div>
+                    </div>
+                  )
+                }
+
                 const pColor = handleToColor(prof.handle)
                 return (
                   <a key={prof.id} href={`/u/${prof.handle}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }}>
@@ -107,6 +127,7 @@ export function FollowListModal({ userId, type, onClose }: FollowListModalProps)
                 )
               })}
             </div>
+
           )}
         </div>
       </motion.div>

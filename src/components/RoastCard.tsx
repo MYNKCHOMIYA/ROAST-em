@@ -96,8 +96,12 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
   const [showReportMenu, setShowReportMenu] = useState(false)
   const [reportLoading, setReportLoading] = useState(false)
 
-  const author = roast.author ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null }
-  const target = roast.target ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null }
+  const author = roast.author?.is_deleted
+    ? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null, is_deleted: true }
+    : roast.author ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null, is_deleted: true }
+  const target = roast.target?.is_deleted
+    ? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null, is_deleted: true }
+    : roast.target ?? { id: '', handle: 'deleted', aura_points: 0, avatar_url: null, is_deleted: true }
 
   const authorColor = handleToColor(author.handle)
   const isOwnRoast = currentUser?.id === roast.author_id
