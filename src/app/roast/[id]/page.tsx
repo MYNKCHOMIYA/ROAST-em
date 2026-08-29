@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Loader2, MessageSquareOff, Send, Flame, Zap } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquareOff, Send, Flame, Zap, Heart } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile, RoastWithProfiles } from '@/lib/types'
+import type { Profile, RoastWithProfiles, CommentWithAuthor } from '@/lib/types'
 import RoastCard from '@/components/RoastCard'
-import { getCurrentProfile, createRoast } from '@/lib/api'
+import { getCurrentProfile } from '@/lib/api'
 import { handleToColor, timeAgo, formatAura } from '@/lib/utils'
 import { RoastText } from '@/components/RoastText'
 
 /** Single comment row */
-function CommentRow({ comment }: { comment: RoastWithProfiles }) {
+function CommentRow({ comment, currentUser }: { comment: CommentWithAuthor, currentUser: Profile | null }) {
   const author = comment.author
   const color = handleToColor(author.handle)
   return (
@@ -43,20 +43,38 @@ function CommentRow({ comment }: { comment: RoastWithProfiles }) {
             {timeAgo(comment.created_at)}
           </span>
         </div>
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)', margin: 0, wordBreak: 'break-word' }}>
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)', margin: 0, wordBreak: 'break-word', paddingBottom: 4 }}>
           <RoastText text={comment.content_text} />
         </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <button
+            onClick={async () => {
+              if (!currentUser) { window.location.href = '/auth/login'; return; }
+              const supabase = createClient()
+              // Optimistic toggle skipped for brevity, just a basic insert
+              const { error } = await supabase.from('comment_likes').insert({ comment_id: comment.id, user_id: currentUser.id })
+              if (error) {
+                if (error.code === '23505') {
+                  // already liked, unlike
+                  await supabase.from('comment_likes').delete().match({ comment_id: comment.id, user_id: currentUser.id })
+                }
+              }
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', padding: 0 }}
+          >
+            <Heart size={14} />
+            <span style={{ fontFamily: 'Space Grotesk' }}>{comment.likes_count}</span>
+          </button>
+        </div>
       </div>
     </motion.div>
   )
 }
 
-/** Comment compose box */
-function CommentBox({ roastId, targetId, currentUser, onPosted }: {
+function CommentBox({ roastId, currentUser, onPosted }: {
   roastId: string
-  targetId: string
   currentUser: Profile | null
-  onPosted: (c: RoastWithProfiles) => void
+  onPosted: (c: CommentWithAuthor) => void
 }) {
   const [text, setText] = useState('')
   const [posting, setPosting] = useState(false)
@@ -70,14 +88,36 @@ function CommentBox({ roastId, targetId, currentUser, onPosted }: {
     if (!text.trim()) return
     setPosting(true); setError('')
     try {
-      const { roastId: newId } = await createRoast(currentUser.id, targetId, text.trim(), roastId)
       const supabase = createClient()
-      const { data } = await supabase
-        .from('roasts')
-        .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
-        .eq('id', newId)
+      const { data: newComment, error: insertError } = await supabase
+        .from('comments')
+        .insert({ roast_id: roastId, author_id: currentUser.id, content_text: text.trim() })
+        .select('id')
         .single()
-      if (data) onPosted(data as RoastWithProfiles)
+      
+      if (insertError) throw insertError
+
+      // Get author details and notify target
+      const { data } = await supabase
+        .from('comments')
+        .select('*, author:profiles!comments_author_id_fkey(id,handle,aura_points,avatar_url)')
+        .eq('id', newComment.id)
+        .single()
+        
+      if (data) {
+        onPosted(data as CommentWithAuthor)
+        
+        // Notify original roast author (fire and forget)
+        const { data: roastData } = await supabase.from('roasts').select('author_id').eq('id', roastId).single()
+        if (roastData && roastData.author_id !== currentUser.id) {
+          supabase.from('notifications').insert({
+            user_id: roastData.author_id,
+            from_user_id: currentUser.id,
+            type: 'commented',
+            roast_id: roastId
+          }).then()
+        }
+      }
       setText('')
       textareaRef.current?.focus()
     } catch (err: unknown) {
@@ -163,7 +203,7 @@ export default function RoastDetailPage() {
 
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
   const [roast, setRoast] = useState<RoastWithProfiles | null>(null)
-  const [comments, setComments] = useState<RoastWithProfiles[]>([])
+  const [comments, setComments] = useState<CommentWithAuthor[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -180,11 +220,11 @@ export default function RoastDetailPage() {
         if (mainRoast) {
           setRoast(mainRoast as RoastWithProfiles)
           const { data: replies } = await supabase
-            .from('roasts')
-            .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
-            .eq('parent_roast_id', roastId)
+            .from('comments')
+            .select('*, author:profiles!comments_author_id_fkey(id,handle,aura_points,avatar_url)')
+            .eq('roast_id', roastId)
             .order('created_at', { ascending: true })
-          setComments(((replies ?? []) as RoastWithProfiles[]).filter(r => r.author !== null))
+          setComments(((replies ?? []) as CommentWithAuthor[]).filter(r => r.author !== null))
         }
       } catch (err) {
         console.error('Failed to load roast thread', err)
@@ -201,21 +241,28 @@ export default function RoastDetailPage() {
     const channel = supabase
       .channel(`roast-comments:${roastId}`)
       .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'roasts',
-        filter: `parent_roast_id=eq.${roastId}`,
+        event: 'INSERT', schema: 'public', table: 'comments',
+        filter: `roast_id=eq.${roastId}`,
       }, async (payload) => {
         const newRow = payload.new as { id: string }
         const { data } = await supabase
-          .from('roasts')
-          .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
+          .from('comments')
+          .select('*, author:profiles!comments_author_id_fkey(id,handle,aura_points,avatar_url)')
           .eq('id', newRow.id)
           .single()
-        if (data && (data as RoastWithProfiles).author !== null) {
+        if (data && (data as CommentWithAuthor).author !== null) {
           setComments(prev => {
-            const exists = prev.some(c => c.id === (data as RoastWithProfiles).id)
-            return exists ? prev : [...prev, data as RoastWithProfiles]
+            const exists = prev.some(c => c.id === (data as CommentWithAuthor).id)
+            return exists ? prev : [...prev, data as CommentWithAuthor]
           })
         }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'comments',
+        filter: `roast_id=eq.${roastId}`,
+      }, (payload) => {
+        const updatedRow = payload.new as { id: string, likes_count: number }
+        setComments(prev => prev.map(c => c.id === updatedRow.id ? { ...c, likes_count: updatedRow.likes_count } : c))
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -270,7 +317,6 @@ export default function RoastDetailPage() {
           </h3>
           <CommentBox
             roastId={roastId}
-            targetId={roast.author_id}
             currentUser={currentUser}
             onPosted={(c) => setComments(prev => {
               const exists = prev.some(x => x.id === c.id)
@@ -296,7 +342,7 @@ export default function RoastDetailPage() {
           <div className="glass-card" style={{ padding: '0 20px' }}>
             <AnimatePresence>
               {comments.map((comment) => (
-                <CommentRow key={comment.id} comment={comment} />
+                <CommentRow key={comment.id} comment={comment} currentUser={currentUser} />
               ))}
             </AnimatePresence>
           </div>

@@ -53,10 +53,23 @@ export interface Follow {
   created_at: string
 }
 
+export interface Comment {
+  id: string
+  roast_id: string
+  author_id: string
+  content_text: string
+  likes_count: number
+  created_at: string
+}
+
+export interface CommentWithAuthor extends Comment {
+  author: Pick<Profile, 'id' | 'handle' | 'avatar_url' | 'aura_points'>
+}
+
 export interface Notification {
   id: string
   user_id: string
-  type: 'roasted' | 'liked' | 'comeback' | 'followed' | 'milestone' | 'mention' | 'reward_stopped'
+  type: 'roasted' | 'liked' | 'comeback' | 'followed' | 'milestone' | 'mention' | 'reward_stopped' | 'commented'
   from_user_id: string
   roast_id: string | null
   is_read: boolean
