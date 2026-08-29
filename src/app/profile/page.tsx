@@ -14,6 +14,7 @@ export default function MyProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [roasts, setRoasts] = useState<RoastWithProfiles[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ followers: 0, following: 0, roastsDropped: 0, gotRoasted: 0 })
 
   async function handleLogout() {
     const supabase = createClient()
@@ -30,6 +31,20 @@ export default function MyProfilePage() {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (!prof) { router.push('/auth/signup'); return }
       setProfile(prof as Profile)
+
+      const [{ count: followersCount }, { count: followingCount }, { count: roastsDroppedCount }, { count: gotRoastedCount }] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', prof.id),
+        supabase.from('roasts').select('*', { count: 'exact', head: true }).eq('author_id', prof.id).eq('is_flagged', false),
+        supabase.from('roasts').select('*', { count: 'exact', head: true }).eq('target_id', prof.id).eq('is_flagged', false),
+      ])
+
+      setStats({
+        followers: followersCount ?? 0,
+        following: followingCount ?? 0,
+        roastsDropped: roastsDroppedCount ?? 0,
+        gotRoasted: gotRoastedCount ?? 0,
+      })
 
       const { data: roastData } = await supabase
         .from('roasts')
@@ -69,22 +84,23 @@ export default function MyProfilePage() {
         <div style={{ marginTop: -48, marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{
-              width: 88, height: 88, borderRadius: '50%',
+              width: 88, height: 88, borderRadius: '50%', overflow: 'hidden',
               background: `${color}25`, border: `3px solid ${color}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 34, fontWeight: 700, color, boxShadow: `0 0 28px ${color}40`,
             }}>
-              {profile!.handle[0].toUpperCase()}
+              {profile!.avatar_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={profile!.avatar_url} alt={profile!.handle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : profile!.handle[0].toUpperCase()
+              }
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={handleLogout} className="btn-ghost" title="Log Out" style={{ fontSize: 13, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'rgba(255, 255, 255, 0.05)' }}>
                 <LogOut size={16} />
               </button>
-              <a href="/profile/settings" className="btn-ghost" title="Settings" style={{ fontSize: 13, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Settings size={16} />
-              </a>
-              <a href="/roast/new" className="btn-primary" style={{ fontSize: 13, padding: '8px 16px' }}>
-                <Flame size={14} /> Drop a Roast
+              <a href="/profile/edit" className="btn-ghost" style={{ fontSize: 13, padding: '8px 16px' }}>
+                Edit Profile
               </a>
             </div>
           </div>
@@ -95,6 +111,13 @@ export default function MyProfilePage() {
               <span style={{ fontWeight: 800 }}>{formatAura(profile!.aura_points)}</span>
               <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>aura</span>
             </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: 14 }}>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.followers}</strong> <span style={{ color: 'var(--text-secondary)' }}>Followers</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.following}</strong> <span style={{ color: 'var(--text-secondary)' }}>Following</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.roastsDropped}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasts</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.gotRoasted}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasted</span></div>
           </div>
         </div>
 

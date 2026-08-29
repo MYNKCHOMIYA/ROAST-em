@@ -24,6 +24,7 @@ export default function UserProfilePage() {
   const [blockLoading, setBlockLoading] = useState(false)
   const [tab, setTab] = useState<'roasts' | 'roasted'>('roasts')
   const [notFound, setNotFound] = useState(false)
+  const [stats, setStats] = useState({ followers: 0, following: 0, roastsDropped: 0, gotRoasted: 0 })
 
   useEffect(() => {
     async function load() {
@@ -45,6 +46,21 @@ export default function UserProfilePage() {
 
       if (!prof) { setNotFound(true); setLoading(false); return }
       setProfile(prof as Profile)
+
+      // Fetch stats
+      const [{ count: followersCount }, { count: followingCount }, { count: roastsDroppedCount }, { count: gotRoastedCount }] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', prof.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', prof.id),
+        supabase.from('roasts').select('*', { count: 'exact', head: true }).eq('author_id', prof.id).eq('is_flagged', false),
+        supabase.from('roasts').select('*', { count: 'exact', head: true }).eq('target_id', prof.id).eq('is_flagged', false),
+      ])
+
+      setStats({
+        followers: followersCount ?? 0,
+        following: followingCount ?? 0,
+        roastsDropped: roastsDroppedCount ?? 0,
+        gotRoasted: gotRoastedCount ?? 0,
+      })
 
       // Check follow status
       if (user) {
@@ -165,13 +181,17 @@ export default function UserProfilePage() {
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
             {/* Avatar */}
             <div style={{
-              width: 96, height: 96, borderRadius: '50%',
+              width: 96, height: 96, borderRadius: '50%', overflow: 'hidden',
               background: `${avatarColor}25`, border: `3px solid ${avatarColor}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 38, fontWeight: 700, color: avatarColor,
               boxShadow: `0 0 32px ${avatarColor}40`,
             }}>
-              {profile!.handle[0].toUpperCase()}
+              {profile!.avatar_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={profile!.avatar_url} alt={profile!.handle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : profile!.handle[0].toUpperCase()
+              }
             </div>
 
             {/* Actions */}
@@ -247,6 +267,13 @@ export default function UserProfilePage() {
                 <Shield size={11} /> Banned
               </div>
             )}
+          </div>
+          
+          <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: 14 }}>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.followers}</strong> <span style={{ color: 'var(--text-secondary)' }}>Followers</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.following}</strong> <span style={{ color: 'var(--text-secondary)' }}>Following</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.roastsDropped}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasts</span></div>
+            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.gotRoasted}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasted</span></div>
           </div>
         </div>
 
