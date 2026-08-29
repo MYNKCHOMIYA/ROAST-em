@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowLeft, Loader2, CheckCheck, Flame, Zap, UserPlus, Swords } from 'lucide-react'
+import { Bell, ArrowLeft, Loader2, CheckCheck, Flame, Zap, UserPlus, Swords, MessageSquareOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -15,6 +15,7 @@ const NOTIF_CONFIG: Record<Notification['type'], { icon: React.ReactNode; label:
   comeback:  { icon: <Swords size={18} />,   label: 'Fired back at you',  color: '#56CCF2' },
   followed:  { icon: <UserPlus size={18} />, label: 'Followed you',       color: '#A78BFA' },
   milestone: { icon: <Zap size={18} />,      label: 'Aura Milestone! 🎉', color: '#FFD200' },
+  mention:   { icon: <MessageSquareOff size={18} />, label: 'Mentioned you in a roast', color: '#FF3CAC' },
 }
 
 function NotifCard({ notif }: { notif: Notification }) {

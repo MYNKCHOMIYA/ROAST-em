@@ -9,6 +9,7 @@ import type { Profile, RoastWithProfiles } from '@/lib/types'
 import RoastCard from '@/components/RoastCard'
 import { getCurrentProfile, createRoast } from '@/lib/api'
 import { handleToColor, timeAgo, formatAura } from '@/lib/utils'
+import { RoastText } from '@/components/RoastText'
 
 /** Single comment row */
 function CommentRow({ comment }: { comment: RoastWithProfiles }) {
@@ -43,7 +44,7 @@ function CommentRow({ comment }: { comment: RoastWithProfiles }) {
           </span>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)', margin: 0, wordBreak: 'break-word' }}>
-          {comment.content_text}
+          <RoastText text={comment.content_text} />
         </p>
       </div>
     </motion.div>

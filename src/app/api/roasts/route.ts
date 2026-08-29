@@ -192,6 +192,33 @@ export async function POST(request: NextRequest) {
     }).eq('id', parentRoastId)
   }
 
+  // ── Parse mentions and send notifications ────────────────────────
+  const mentions = content.match(/@([a-zA-Z0-9_]+)/g)
+  if (mentions) {
+    const handles = Array.from(new Set(mentions.map(m => m.substring(1).toLowerCase())))
+    
+    // Find users by handle
+    const { data: mentionedUsers } = await supabase
+      .from('profiles')
+      .select('id, handle')
+      .in('handle', handles)
+      
+    if (mentionedUsers && mentionedUsers.length > 0) {
+      const notifications = mentionedUsers
+        .filter(u => u.id !== user.id && u.id !== targetId) // Don't notify self, and target already gets a 'roasted' notif
+        .map(u => ({
+          user_id: u.id,
+          type: 'mention',
+          from_user_id: user.id,
+          roast_id: roast.id
+        }))
+        
+      if (notifications.length > 0) {
+        await supabase.from('notifications').insert(notifications)
+      }
+    }
+  }
+
   return NextResponse.json(
     {
       roastId: roast.id,

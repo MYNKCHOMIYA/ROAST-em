@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Flame, Zap, UserPlus, Swords, X, CheckCheck } from 'lucide-react'
+import { Bell, Flame, Zap, UserPlus, Swords, X, CheckCheck, MessageSquareOff } from 'lucide-react'
 import { handleToColor, timeAgo } from '@/lib/utils'
 import type { Notification } from '@/lib/types'
 
@@ -12,6 +12,7 @@ export const NOTIF_ICONS: Record<Notification['type'], React.ReactNode> = {
   comeback:  <Swords size={14} style={{ color: '#56CCF2' }} />,
   followed:  <UserPlus size={14} style={{ color: '#A78BFA' }} />,
   milestone: <Zap size={14} style={{ color: '#FFD200' }} />,
+  mention:   <MessageSquareOff size={14} style={{ color: '#FF3CAC' }} />,
 }
 
 export const NOTIF_TEXT: Record<Notification['type'], (handle: string) => string> = {
@@ -20,6 +21,7 @@ export const NOTIF_TEXT: Record<Notification['type'], (handle: string) => string
   comeback:  (h) => `@${h} fired back at you ⚔️`,
   followed:  (h) => `@${h} is following you`,
   milestone: (_h) => `Aura milestone reached 🎉 Keep it up!`,
+  mention:   (h) => `@${h} mentioned you in a roast 💬`,
 }
 
 interface NotificationsPanelProps {

@@ -7,6 +7,7 @@ import type { RoastWithProfiles, Profile } from '@/lib/types'
 import { likeRoast, reportRoast } from '@/lib/api'
 import { formatAura, handleToColor, timeAgo, cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { RoastText } from './RoastText'
 
 interface RoastCardProps {
   roast: RoastWithProfiles
@@ -361,7 +362,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
           fontSize: 15, lineHeight: 1.65, marginBottom: 14,
           color: 'var(--text-primary)', letterSpacing: '-0.01em',
         }}>
-          {roast.content_text}
+          <RoastText text={roast.content_text} />
         </p>
       )}
 
