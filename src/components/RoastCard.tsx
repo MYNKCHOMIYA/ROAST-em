@@ -230,7 +230,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       whileHover={{ y: -3 }}
-      transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="glass-card"
       style={{
         padding: '18px 20px',

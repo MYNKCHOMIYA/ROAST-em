@@ -144,6 +144,10 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState('')
   const [newRoastCount, setNewRoastCount] = useState(0)
+  
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
   const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
 
   const configured = isSupabaseConfigured()
@@ -214,9 +218,32 @@ export default function FeedPage() {
     await loadFeed(tab, nextPage, false)
   }
 
+  const minSwipeDistance = 75
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe && tab === 'global') setTab('following')
+    if (isRightSwipe && tab === 'following') setTab('global')
+  }
+
   return (
     <PullToRefresh onRefresh={async () => { await handleRefresh() }}>
-    <main style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}>
+    <main 
+      style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEndEvent}
+    >
       {/* Background orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
         <div className="glow-orb" style={{ width: 500, height: 500, background: 'var(--aura-pink)', top: '-15%', right: '-10%', opacity: 0.08 }} />
@@ -239,6 +266,7 @@ export default function FeedPage() {
               initial={{ opacity: 0, y: -16, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16, scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={() => { handleRefresh(); setNewRoastCount(0) }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
