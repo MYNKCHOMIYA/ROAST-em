@@ -404,10 +404,23 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
           )}
         </motion.button>
 
-        {/* Comeback button (only shown to target in active comeback window) */}
-        {isTarget && comebackActive && (
+        {/* Comeback button or Thread link */}
+        {roast.has_fireback ? (
+          <a
+            href={`/roast/${roast.id}`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 'var(--radius-full)',
+              background: 'rgba(255,60,172,0.15)', border: '1px solid rgba(255,60,172,0.4)',
+              color: 'var(--aura-pink)', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+            }}
+          >
+            <Flame size={13} />
+            View Thread
+          </a>
+        ) : isTarget && comebackActive ? (
           <motion.a
-            href={`/roast/new?comeback=${roast.id}&target=${roast.author_id}`}
+            href={`/roast/new?comeback=${roast.id}&targetHandle=${author.handle}`}
             animate={{ boxShadow: ['0 0 0px rgba(255,60,172,0)', '0 0 20px rgba(255,60,172,0.4)', '0 0 0px rgba(255,60,172,0)'] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
             style={{
@@ -421,7 +434,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
             <Flame size={13} />
             Fire Back!
           </motion.a>
-        )}
+        ) : null}
 
         {/* Comment (placeholder for M4) */}
         <button

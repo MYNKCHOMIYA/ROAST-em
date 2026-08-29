@@ -184,6 +184,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to post roast. Try again.' }, { status: 500 })
   }
 
+  // If this was a fireback, mark the parent roast as firebacked and clear the timer
+  if (parentRoastId) {
+    await supabase.from('roasts').update({
+      has_fireback: true,
+      comeback_window_ends_at: null
+    }).eq('id', parentRoastId)
+  }
+
   return NextResponse.json(
     {
       roastId: roast.id,

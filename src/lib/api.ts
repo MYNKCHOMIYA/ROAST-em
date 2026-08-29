@@ -13,8 +13,8 @@ export async function fetchGlobalFeed(page = 0, limit = 20): Promise<RoastWithPr
     .from('roasts')
     .select(`
       *,
-      author:profiles!roasts_author_id_fkey ( id, handle, aura_points, avatar_url ),
-      target:profiles!roasts_target_id_fkey ( id, handle, aura_points, avatar_url )
+      author:profiles!roasts_author_id_fkey ( id, handle, aura_points, avatar_url, is_deleted ),
+      target:profiles!roasts_target_id_fkey ( id, handle, aura_points, avatar_url, is_deleted )
     `)
     .eq('is_flagged', false)
     .order('created_at', { ascending: false })
@@ -53,8 +53,8 @@ export async function fetchFollowingFeed(userId: string, page = 0, limit = 20): 
     .from('roasts')
     .select(`
       *,
-      author:profiles!roasts_author_id_fkey ( id, handle, aura_points, avatar_url ),
-      target:profiles!roasts_target_id_fkey ( id, handle, aura_points, avatar_url )
+      author:profiles!roasts_author_id_fkey ( id, handle, aura_points, avatar_url, is_deleted ),
+      target:profiles!roasts_target_id_fkey ( id, handle, aura_points, avatar_url, is_deleted )
     `)
     .in('author_id', followingIds)
     .eq('is_flagged', false)

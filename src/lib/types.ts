@@ -27,6 +27,7 @@ export interface Roast {
   parent_roast_id: string | null
   comeback_window_ends_at: string | null
   is_flagged: boolean
+  has_fireback: boolean
   created_at: string
 }
 
