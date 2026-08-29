@@ -468,13 +468,14 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUn
           </motion.a>
         ) : null}
 
-        {/* Comment (placeholder for M4) */}
-        <button
-          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13 }}
+        {/* Comment System */}
+        <a
+          href={`/roast/${roast.id}`}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13, textDecoration: 'none' }}
         >
           <MessageCircle size={14} />
-          <span style={{ fontFamily: 'Space Mono, monospace' }}>0</span>
-        </button>
+          <span style={{ fontFamily: 'Space Mono, monospace', fontWeight: 600 }}>Reply</span>
+        </a>
 
         <button
           style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13, marginLeft: 'auto' }}
