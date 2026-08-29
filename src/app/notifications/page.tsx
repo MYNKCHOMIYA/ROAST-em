@@ -10,10 +10,11 @@ import { handleToColor, timeAgo } from '@/lib/utils'
 import type { Notification } from '@/lib/types'
 
 const NOTIF_CONFIG: Record<Notification['type'], { icon: React.ReactNode; label: string; color: string }> = {
-  roasted:  { icon: <Flame size={18} />,    label: 'Roasted you',        color: '#FF3CAC' },
-  liked:    { icon: <Zap size={18} />,      label: 'Gave you Aura',      color: '#FFD200' },
-  comeback: { icon: <Swords size={18} />,   label: 'Fired back at you',  color: '#56CCF2' },
-  followed: { icon: <UserPlus size={18} />, label: 'Followed you',       color: '#A78BFA' },
+  roasted:   { icon: <Flame size={18} />,    label: 'Roasted you',        color: '#FF3CAC' },
+  liked:     { icon: <Zap size={18} />,      label: 'Gave you Aura',      color: '#FFD200' },
+  comeback:  { icon: <Swords size={18} />,   label: 'Fired back at you',  color: '#56CCF2' },
+  followed:  { icon: <UserPlus size={18} />, label: 'Followed you',       color: '#A78BFA' },
+  milestone: { icon: <Zap size={18} />,      label: 'Aura Milestone! 🎉', color: '#FFD200' },
 }
 
 function NotifCard({ notif }: { notif: Notification }) {

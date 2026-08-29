@@ -1,13 +1,159 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, MessageSquareOff } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Loader2, MessageSquareOff, Send, Flame, Zap } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, RoastWithProfiles } from '@/lib/types'
 import RoastCard from '@/components/RoastCard'
-import { getCurrentProfile } from '@/lib/api'
+import { getCurrentProfile, createRoast } from '@/lib/api'
+import { handleToColor, timeAgo, formatAura } from '@/lib/utils'
+
+/** Single comment row */
+function CommentRow({ comment }: { comment: RoastWithProfiles }) {
+  const author = comment.author
+  const color = handleToColor(author.handle)
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      style={{ display: 'flex', gap: 12, padding: '14px 0', borderBottom: '1px solid var(--border-subtle)' }}
+    >
+      <a href={`/u/${author.handle}`} style={{ flexShrink: 0 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: `${color}25`, border: `1.5px solid ${color}50`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, fontWeight: 700, color,
+        }}>
+          {author.handle[0].toUpperCase()}
+        </div>
+      </a>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <a href={`/u/${author.handle}`} style={{ fontWeight: 700, fontSize: 13, color, textDecoration: 'none' }}>
+            @{author.handle}
+          </a>
+          <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 'var(--radius-full)', background: `${color}15`, border: `1px solid ${color}30`, color, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Zap size={8} /> {formatAura(author.aura_points)}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'Space Mono, monospace', marginLeft: 'auto' }}>
+            {timeAgo(comment.created_at)}
+          </span>
+        </div>
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-primary)', margin: 0, wordBreak: 'break-word' }}>
+          {comment.content_text}
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+/** Comment compose box */
+function CommentBox({ roastId, targetId, currentUser, onPosted }: {
+  roastId: string
+  targetId: string
+  currentUser: Profile | null
+  onPosted: (c: RoastWithProfiles) => void
+}) {
+  const [text, setText] = useState('')
+  const [posting, setPosting] = useState(false)
+  const [error, setError] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const color = currentUser ? handleToColor(currentUser.handle) : 'var(--aura-pink)'
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!currentUser) { window.location.href = '/auth/login'; return }
+    if (!text.trim()) return
+    setPosting(true); setError('')
+    try {
+      const { roastId: newId } = await createRoast(currentUser.id, targetId, text.trim(), roastId)
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('roasts')
+        .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
+        .eq('id', newId)
+        .single()
+      if (data) onPosted(data as RoastWithProfiles)
+      setText('')
+      textareaRef.current?.focus()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to post')
+    }
+    setPosting(false)
+  }
+
+  if (!currentUser) {
+    return (
+      <div style={{ padding: '16px 0', textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>Sign in to drop a comeback</p>
+        <a href="/auth/login" className="btn-primary" style={{ fontSize: 13, padding: '8px 20px', display: 'inline-flex' }}>
+          <Flame size={14} /> Sign In
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+        background: `${color}25`, border: `1.5px solid ${color}50`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, fontWeight: 700, color,
+      }}>
+        {currentUser.handle[0].toUpperCase()}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{
+          background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', overflow: 'hidden', transition: 'border-color 0.2s',
+        }}>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+            onFocus={(e) => { e.currentTarget.parentElement!.style.borderColor = `${color}60` }}
+            onBlur={(e) => { e.currentTarget.parentElement!.style.borderColor = 'var(--border-subtle)' }}
+            placeholder="Fire back..."
+            maxLength={280}
+            rows={2}
+            style={{
+              width: '100%', background: 'transparent', border: 'none', outline: 'none',
+              color: 'var(--text-primary)', fontSize: 14, lineHeight: 1.6,
+              padding: '12px 14px 4px', resize: 'none', fontFamily: 'Space Grotesk, sans-serif',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 14px 10px' }}>
+            <span style={{ fontSize: 11, color: text.length > 240 ? 'var(--aura-orange)' : 'var(--text-secondary)' }}>
+              {text.length}/280
+            </span>
+            <button
+              type="submit"
+              disabled={posting || !text.trim()}
+              style={{
+                background: text.trim() ? color : 'transparent',
+                border: `1px solid ${color}`,
+                color: text.trim() ? 'white' : color,
+                padding: '5px 14px', borderRadius: 'var(--radius-full)',
+                fontSize: 12, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                opacity: posting ? 0.6 : 1, transition: 'all 0.2s',
+              }}
+            >
+              {posting ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={12} />}
+              {posting ? 'Posting...' : 'Reply'}
+            </button>
+          </div>
+        </div>
+        {error && <p style={{ fontSize: 12, color: 'var(--aura-pink)', marginTop: 6 }}>⚠️ {error}</p>}
+      </div>
+    </form>
+  )
+}
 
 export default function RoastDetailPage() {
   const router = useRouter()
@@ -16,7 +162,7 @@ export default function RoastDetailPage() {
 
   const [currentUser, setCurrentUser] = useState<Profile | null>(null)
   const [roast, setRoast] = useState<RoastWithProfiles | null>(null)
-  const [comebacks, setComebacks] = useState<RoastWithProfiles[]>([])
+  const [comments, setComments] = useState<RoastWithProfiles[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,28 +170,20 @@ export default function RoastDetailPage() {
       try {
         const profile = await getCurrentProfile()
         setCurrentUser(profile)
-
         const supabase = createClient()
-        
-        // Fetch the main roast
         const { data: mainRoast } = await supabase
           .from('roasts')
           .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
           .eq('id', roastId)
           .single()
-        
         if (mainRoast) {
           setRoast(mainRoast as RoastWithProfiles)
-
-          // Fetch comebacks (roasts where parent_roast_id is this roast)
-          // Wait, the schema has parent_roast_id? Yes: `parent_roast_id UUID REFERENCES public.roasts(id)`
-          const { data: comebackData } = await supabase
+          const { data: replies } = await supabase
             .from('roasts')
             .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
             .eq('parent_roast_id', roastId)
             .order('created_at', { ascending: true })
-
-          setComebacks((comebackData ?? []) as RoastWithProfiles[])
+          setComments(((replies ?? []) as RoastWithProfiles[]).filter(r => r.author !== null))
         }
       } catch (err) {
         console.error('Failed to load roast thread', err)
@@ -54,6 +192,32 @@ export default function RoastDetailPage() {
       }
     }
     load()
+  }, [roastId])
+
+  // Realtime subscription for new comments
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`roast-comments:${roastId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'roasts',
+        filter: `parent_roast_id=eq.${roastId}`,
+      }, async (payload) => {
+        const newRow = payload.new as { id: string }
+        const { data } = await supabase
+          .from('roasts')
+          .select('*, author:profiles!roasts_author_id_fkey(id,handle,aura_points,avatar_url), target:profiles!roasts_target_id_fkey(id,handle,aura_points,avatar_url)')
+          .eq('id', newRow.id)
+          .single()
+        if (data && (data as RoastWithProfiles).author !== null) {
+          setComments(prev => {
+            const exists = prev.some(c => c.id === (data as RoastWithProfiles).id)
+            return exists ? prev : [...prev, data as RoastWithProfiles]
+          })
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [roastId])
 
   if (loading) {
@@ -70,55 +234,70 @@ export default function RoastDetailPage() {
         <div style={{ fontSize: 50, marginBottom: 16 }}>👻</div>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Roast Not Found</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>This roast was either deleted or never existed.</p>
-        <button onClick={() => router.push('/feed')} className="btn-primary" style={{ display: 'inline-flex', padding: '10px 20px', fontSize: 14 }}>
-          Back to Feed
-        </button>
+        <button onClick={() => router.push('/feed')} className="btn-primary" style={{ display: 'inline-flex', padding: '10px 20px', fontSize: 14 }}>Back to Feed</button>
       </main>
     )
   }
 
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}>
-      {/* Nav */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+        <div className="glow-orb" style={{ width: 350, height: 350, background: 'var(--aura-pink)', top: '-10%', right: '-5%', opacity: 0.06 }} />
+      </div>
+
       <nav className="glass" style={{ borderBottom: '1px solid var(--border-subtle)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px', display: 'flex', alignItems: 'center', height: 58 }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px', display: 'flex', alignItems: 'center', height: 58, gap: 16 }}>
           <button onClick={() => router.back()}
-            style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: 'none', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+            style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: 'none', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', flexShrink: 0 }}>
             <ArrowLeft size={16} />
           </button>
-          <span style={{ marginLeft: 16, fontSize: 16, fontWeight: 700 }}>Roast Thread</span>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>Roast Thread</span>
+          {comments.length > 0 && (
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-elevated)', padding: '3px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-subtle)' }}>
+              {comments.length} {comments.length === 1 ? 'reply' : 'replies'}
+            </span>
+          )}
         </div>
       </nav>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 80px' }}>
-        {/* Main Roast */}
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 80px', position: 'relative', zIndex: 1 }}>
         <RoastCard roast={roast} currentUser={currentUser} />
 
-        {/* Thread divider */}
-        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0' }}>
+        <div className="glass-card" style={{ padding: '18px 20px', marginTop: 16 }}>
+          <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
+            💬 Drop a Reply
+          </h3>
+          <CommentBox
+            roastId={roastId}
+            targetId={roast.author_id}
+            currentUser={currentUser}
+            onPosted={(c) => setComments(prev => {
+              const exists = prev.some(x => x.id === c.id)
+              return exists ? prev : [...prev, c]
+            })}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0 20px' }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-          <div style={{ padding: '0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Comebacks
+          <div style={{ padding: '0 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {comments.length > 0 ? `${comments.length} ${comments.length === 1 ? 'Reply' : 'Replies'}` : 'Replies'}
           </div>
           <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
         </div>
 
-        {/* Comebacks */}
-        {comebacks.length === 0 ? (
+        {comments.length === 0 ? (
           <div className="glass-card" style={{ padding: '40px 20px', textAlign: 'center', opacity: 0.8 }}>
             <MessageSquareOff size={32} style={{ color: 'var(--text-secondary)', margin: '0 auto 12px', opacity: 0.5 }} />
-            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>No comebacks yet. Target was left speechless.</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>No replies yet. Be the first to fire back.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'relative' }}>
-            {/* Thread vertical line connecting comebacks visually */}
-            <div style={{ position: 'absolute', top: 20, bottom: 20, left: 34, width: 2, background: 'var(--border-subtle)', zIndex: 0 }} />
-            
-            {comebacks.map((comeback) => (
-              <div key={comeback.id} style={{ position: 'relative', zIndex: 1, paddingLeft: 16 }}>
-                <RoastCard roast={comeback} currentUser={currentUser} />
-              </div>
-            ))}
+          <div className="glass-card" style={{ padding: '0 20px' }}>
+            <AnimatePresence>
+              {comments.map((comment) => (
+                <CommentRow key={comment.id} comment={comment} />
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>

@@ -7,17 +7,19 @@ import { handleToColor, timeAgo } from '@/lib/utils'
 import type { Notification } from '@/lib/types'
 
 const NOTIF_ICONS: Record<Notification['type'], React.ReactNode> = {
-  roasted:  <Flame size={14} style={{ color: '#FF3CAC' }} />,
-  liked:    <Zap size={14} style={{ color: '#FFD200' }} />,
-  comeback: <Swords size={14} style={{ color: '#56CCF2' }} />,
-  followed: <UserPlus size={14} style={{ color: '#A78BFA' }} />,
+  roasted:   <Flame size={14} style={{ color: '#FF3CAC' }} />,
+  liked:     <Zap size={14} style={{ color: '#FFD200' }} />,
+  comeback:  <Swords size={14} style={{ color: '#56CCF2' }} />,
+  followed:  <UserPlus size={14} style={{ color: '#A78BFA' }} />,
+  milestone: <Zap size={14} style={{ color: '#FFD200' }} />,
 }
 
 const NOTIF_TEXT: Record<Notification['type'], (handle: string) => string> = {
-  roasted:  (h) => `@${h} roasted you 🔥`,
-  liked:    (h) => `@${h} gave you Aura ⚡`,
-  comeback: (h) => `@${h} fired back at you ⚔️`,
-  followed: (h) => `@${h} is following you`,
+  roasted:   (h) => `@${h} roasted you 🔥`,
+  liked:     (h) => `@${h} gave you Aura ⚡`,
+  comeback:  (h) => `@${h} fired back at you ⚔️`,
+  followed:  (h) => `@${h} is following you`,
+  milestone: (_h) => `Aura milestone reached 🎉 Keep it up!`,
 }
 
 interface NotificationsPanelProps {
