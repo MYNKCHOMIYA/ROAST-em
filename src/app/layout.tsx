@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import ArenaToaster from '@/components/ArenaToaster'
+import { PwaInit } from '@/components/PwaInit'
 import './globals.css'
 
 const APP_URL = 'https://roastem.app'
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="noise-overlay">
         {children}
         <ArenaToaster />
+        <PwaInit />
       </body>
     </html>
   )
