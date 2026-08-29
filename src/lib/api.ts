@@ -28,7 +28,8 @@ export async function fetchGlobalFeed(page = 0, limit = 20): Promise<RoastWithPr
 
   const { data, error } = await query
   if (error) throw error
-  return ((data ?? []) as RoastWithProfiles[]).filter(r => r.author !== null)
+  // Filter out soft-deleted authors
+  return ((data ?? []) as RoastWithProfiles[]).filter(r => r.author !== null && !r.author.is_deleted)
 }
 
 /** Fetch feed for a specific user's following list */

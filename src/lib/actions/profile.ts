@@ -60,18 +60,41 @@ export async function scheduleAccountDeletion() {
     return { error: 'Unauthorized.' }
   }
 
-  // Mark the account as soft-deleted
-  const { error: deleteError } = await supabase
-    .from('profiles')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', user.id)
+  // Use DB function: soft delete (15-day grace period)
+  const { error } = await supabase.rpc('soft_delete_account')
+  if (error) return { error: error.message }
 
-  if (deleteError) {
-    return { error: deleteError.message }
+  await supabase.auth.signOut()
+  return { success: true }
+}
+
+export async function hardDeleteAccount() {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { error: 'Unauthorized.' }
   }
 
-  // Sign out the user immediately after scheduling deletion
-  await supabase.auth.signOut()
+  const { error } = await supabase.rpc('hard_delete_account')
+  if (error) return { error: error.message }
 
+  // Delete auth user session
+  await supabase.auth.signOut()
+  return { success: true }
+}
+
+export async function restoreAccount() {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { error: 'Unauthorized.' }
+  }
+
+  const { error } = await supabase.rpc('restore_account')
+  if (error) return { error: error.message }
+
+  revalidatePath('/profile')
   return { success: true }
 }

@@ -8,6 +8,8 @@ export interface Profile {
   bio: string | null
   phone_hash: string | null
   is_banned: boolean
+  is_deleted: boolean
+  deleted_at: string | null
   shield_until: string | null
   created_at: string
   updated_at: string
@@ -30,8 +32,8 @@ export interface Roast {
 
 /** Roast with joined profile data (from SELECT with foreign key joins) */
 export interface RoastWithProfiles extends Roast {
-  author: Pick<Profile, 'id' | 'handle' | 'aura_points' | 'avatar_url'>
-  target: Pick<Profile, 'id' | 'handle' | 'aura_points' | 'avatar_url'>
+  author: Pick<Profile, 'id' | 'handle' | 'aura_points' | 'avatar_url' | 'is_deleted'>
+  target: Pick<Profile, 'id' | 'handle' | 'aura_points' | 'avatar_url' | 'is_deleted'>
 }
 
 export interface AuraTransaction {

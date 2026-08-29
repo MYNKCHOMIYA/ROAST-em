@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Loader2, Flame, Zap, ArrowLeft, Settings, LogOut } from 'lucide-react'
+import { Loader2, Flame, Zap, ArrowLeft, Settings, LogOut, RefreshCw, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { handleToColor, formatAura } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import type { Profile, RoastWithProfiles } from '@/lib/types'
 import RoastCard from '@/components/RoastCard'
 import { FollowListModal } from '@/components/FollowListModal'
+import { restoreAccount } from '@/lib/actions/profile'
 
 export default function MyProfilePage() {
   const router = useRouter()
@@ -17,11 +18,19 @@ export default function MyProfilePage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ followers: 0, following: 0, roastsDropped: 0, gotRoasted: 0 })
   const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null)
+  const [restoring, setRestoring] = useState(false)
 
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
+  }
+
+  async function handleRestore() {
+    setRestoring(true)
+    await restoreAccount()
+    setProfile(prev => prev ? { ...prev, is_deleted: false, deleted_at: null } : prev)
+    setRestoring(false)
   }
 
   useEffect(() => {
@@ -69,9 +78,49 @@ export default function MyProfilePage() {
   }
 
   const color = handleToColor(profile!.handle)
+  const isOnGracePeriod = profile!.is_deleted && profile!.deleted_at !== null
+  const daysLeft = isOnGracePeriod
+    ? Math.max(0, 15 - Math.floor((Date.now() - new Date(profile!.deleted_at!).getTime()) / 86_400_000))
+    : 0
 
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}>
+      {/* Grace period banner */}
+      {isOnGracePeriod && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,200,60,0.15), rgba(255,60,172,0.1))',
+            borderBottom: '1px solid rgba(255,200,60,0.3)',
+            padding: '12px 16px',
+          }}
+        >
+          <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <AlertTriangle size={16} style={{ color: '#FFD200', flexShrink: 0 }} />
+            <p style={{ fontSize: 13, margin: 0, flex: 1 }}>
+              <strong style={{ color: '#FFD200' }}>Account pending deletion</strong>
+              <span style={{ color: 'var(--text-secondary)' }}> — {daysLeft} day{daysLeft !== 1 ? 's' : ''} left before permanent wipe</span>
+            </p>
+            <button
+              onClick={handleRestore}
+              disabled={restoring}
+              style={{
+                background: 'rgba(39,201,150,0.15)', border: '1px solid rgba(39,201,150,0.4)',
+                color: '#27C996', borderRadius: 'var(--radius-full)',
+                padding: '6px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              {restoring
+                ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                : <RefreshCw size={13} />
+              }
+              Restore Account
+            </button>
+          </div>
+        </motion.div>
+      )}
       <div style={{ height: 140, background: `linear-gradient(135deg, ${color}20, transparent)` }}>
         <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', gap: 16 }}>
           <button onClick={() => router.push('/feed')}

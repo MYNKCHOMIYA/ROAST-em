@@ -73,7 +73,8 @@ export default function SearchPage() {
       // Trending = top aura holders
       const { data } = await supabase
         .from('profiles')
-        .select('id, handle, aura_points, avatar_url, bio, phone_hash, is_banned, created_at, updated_at')
+        .select('id, handle, aura_points, avatar_url, bio, phone_hash, is_banned, is_deleted, deleted_at, created_at, updated_at')
+        .eq('is_deleted', false)
         .order('aura_points', { ascending: false })
         .neq('id', user?.id ?? '')
         .limit(10)
@@ -90,8 +91,9 @@ export default function SearchPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('profiles')
-      .select('id, handle, aura_points, avatar_url, bio, phone_hash, is_banned, created_at, updated_at')
+      .select('id, handle, aura_points, avatar_url, bio, phone_hash, is_banned, is_deleted, deleted_at, created_at, updated_at')
       .ilike('handle', `%${q}%`)
+      .eq('is_deleted', false)
       .neq('id', currentUserId ?? '')
       .limit(15)
     setResults((data ?? []) as Profile[])

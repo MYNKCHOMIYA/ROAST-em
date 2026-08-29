@@ -156,6 +156,7 @@ export default function LeaderboardPage() {
         .from('profiles')
         .select('*')
         .eq('is_banned', false)
+        .eq('is_deleted', false)
         .order('aura_points', { ascending: false })
         .limit(50)
 

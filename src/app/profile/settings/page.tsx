@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, User, Lock, Phone, AlertTriangle, Loader2, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { updateProfile, scheduleAccountDeletion } from '@/lib/actions/profile'
+import { updateProfile, scheduleAccountDeletion, hardDeleteAccount } from '@/lib/actions/profile'
 import { updatePassword, updateEmail } from '@/lib/actions/auth'
 
 export default function SettingsPage() {
@@ -66,9 +66,9 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(mode: 'hard' | 'soft') {
     setLoading(prev => ({ ...prev, delete: true }))
-    const res = await scheduleAccountDeletion()
+    const res = mode === 'hard' ? await hardDeleteAccount() : await scheduleAccountDeletion()
     if (res.error) {
       setMessage(prev => ({ ...prev, delete: `Error: ${res.error}` }))
       setLoading(prev => ({ ...prev, delete: false }))
@@ -175,31 +175,61 @@ export default function SettingsPage() {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+          <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}
               onClick={() => setShowDeleteConfirm(false)}
             />
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="glass-card" style={{ position: 'relative', width: '90%', maxWidth: 400, padding: 32, border: '1px solid rgba(255, 60, 172, 0.4)', boxShadow: '0 20px 40px rgba(255,60,172,0.1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255, 60, 172, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <AlertTriangle size={20} style={{ color: 'var(--aura-pink)' }} />
+              className="glass-card" style={{ position: 'relative', width: '100%', maxWidth: 420, padding: 28, border: '1px solid rgba(255, 60, 172, 0.4)', boxShadow: '0 20px 60px rgba(255,60,172,0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255, 60, 172, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={22} style={{ color: 'var(--aura-pink)' }} />
                 </div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>Are you sure?</h3>
+                <h3 style={{ fontSize: 19, fontWeight: 700, color: 'white', margin: 0 }}>Delete Account</h3>
               </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>
-                Your account will be logged out immediately and hidden from everyone. 
-                If you don't return within <strong style={{ color: 'white' }}>15 days</strong>, your account and all its data will be permanently wiped from the arena.
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
+                Choose how you want to delete your account. This action can have serious consequences.
               </p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowDeleteConfirm(false)} className="btn-ghost" style={{ padding: '8px 16px', fontSize: 14 }}>
-                  Cancel
-                </button>
-                <button onClick={handleDeleteAccount} className="btn-primary" style={{ padding: '8px 16px', fontSize: 14, background: 'linear-gradient(135deg, #FF3CAC, var(--aura-purple))' }}>
-                  {loading.delete ? <Loader2 size={16} className="animate-spin" /> : 'Yes, delete it'}
+
+              {message.delete && <p style={{ fontSize: 12, color: 'var(--aura-pink)', marginBottom: 16 }}>{message.delete}</p>}
+
+              {/* Option A: Grace Period */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>⏳ 15-Day Grace Period</div>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+                  Your account is hidden immediately. You can log back in anytime in the next <strong style={{ color: 'white' }}>15 days</strong> to restore it. After 15 days, your data is permanently wiped.
+                </p>
+                <button
+                  onClick={() => handleDeleteAccount('soft')}
+                  disabled={loading.delete}
+                  className="btn-ghost"
+                  style={{ width: '100%', padding: '10px', fontSize: 14, borderColor: 'rgba(255,200,60,0.4)', color: '#FFD200', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  {loading.delete ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+                  Start Grace Period
                 </button>
               </div>
+
+              {/* Option B: Delete Now */}
+              <div style={{ background: 'rgba(255,60,172,0.05)', border: '1px solid rgba(255,60,172,0.25)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6, color: 'var(--aura-pink)' }}>💀 Delete Now</div>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+                  Your account, all roasts, follows, aura — everything is <strong style={{ color: 'var(--aura-pink)' }}>permanently wiped immediately</strong>. No recovery possible.
+                </p>
+                <button
+                  onClick={() => handleDeleteAccount('hard')}
+                  disabled={loading.delete}
+                  style={{ width: '100%', padding: '10px', fontSize: 14, background: 'rgba(255,60,172,0.15)', color: 'var(--aura-pink)', border: '1px solid rgba(255,60,172,0.4)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 600 }}
+                >
+                  {loading.delete ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+                  Delete Everything Now
+                </button>
+              </div>
+
+              <button onClick={() => setShowDeleteConfirm(false)} className="btn-ghost" style={{ width: '100%', padding: '9px', fontSize: 13 }}>
+                Cancel
+              </button>
             </motion.div>
           </div>
         )}

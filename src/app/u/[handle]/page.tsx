@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Zap, ArrowLeft, Calendar, Shield, UserPlus, UserMinus, Loader2 } from 'lucide-react'
+import { Flame, Zap, ArrowLeft, Calendar, Shield, UserPlus, UserMinus, Loader2, AlertTriangle } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { handleToColor, formatAura, timeAgo } from '@/lib/utils'
@@ -154,15 +154,39 @@ export default function UserProfilePage() {
     return (
       <main style={{ minHeight: '100dvh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
         <div style={{ fontSize: 56 }}>👻</div>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>@{handle} doesn't exist</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700 }}>@{handle} doesn&apos;t exist</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Maybe they got roasted out of existence</p>
         <button onClick={() => router.push('/feed')} className="btn-ghost" style={{ fontSize: 14 }}>← Back to Feed</button>
       </main>
     )
   }
 
+  // Hard-block if profile is past grace period (shouldn't happen but just in case)
+  if (profile!.is_deleted) {
+    const deletedAt = new Date(profile!.deleted_at!).getTime()
+    const isExpired = Date.now() - deletedAt > 15 * 86_400_000
+    if (isExpired) {
+      return (
+        <main style={{ minHeight: '100dvh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontSize: 56 }}>💀</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700 }}>This account is gone</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Permanently deleted from the arena</p>
+          <button onClick={() => router.push('/feed')} className="btn-ghost" style={{ fontSize: 14 }}>← Back to Feed</button>
+        </main>
+      )
+    }
+  }
+
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--bg-base)' }}>
+      {/* Pending deletion banner */}
+      {profile!.is_deleted && (
+        <div style={{ background: 'var(--aura-pink)', color: 'white', padding: '12px 16px', textAlign: 'center', fontSize: 14, fontWeight: 600 }}>
+          <AlertTriangle size={16} style={{ display: 'inline', marginRight: 8 }} />
+          This account is pending deletion and will be removed soon.
+        </div>
+      )}
+
       {/* Background accent */}
       <div style={{ height: 160, background: `linear-gradient(135deg, ${avatarColor}18, transparent)`, position: 'relative' }}>
         <div style={{
