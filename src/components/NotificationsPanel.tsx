@@ -6,7 +6,7 @@ import { Bell, Flame, Zap, UserPlus, Swords, X, CheckCheck } from 'lucide-react'
 import { handleToColor, timeAgo } from '@/lib/utils'
 import type { Notification } from '@/lib/types'
 
-const NOTIF_ICONS: Record<Notification['type'], React.ReactNode> = {
+export const NOTIF_ICONS: Record<Notification['type'], React.ReactNode> = {
   roasted:   <Flame size={14} style={{ color: '#FF3CAC' }} />,
   liked:     <Zap size={14} style={{ color: '#FFD200' }} />,
   comeback:  <Swords size={14} style={{ color: '#56CCF2' }} />,
@@ -14,7 +14,7 @@ const NOTIF_ICONS: Record<Notification['type'], React.ReactNode> = {
   milestone: <Zap size={14} style={{ color: '#FFD200' }} />,
 }
 
-const NOTIF_TEXT: Record<Notification['type'], (handle: string) => string> = {
+export const NOTIF_TEXT: Record<Notification['type'], (handle: string) => string> = {
   roasted:   (h) => `@${h} roasted you 🔥`,
   liked:     (h) => `@${h} gave you Aura ⚡`,
   comeback:  (h) => `@${h} fired back at you ⚔️`,

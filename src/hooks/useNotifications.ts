@@ -13,6 +13,7 @@ import type { Notification } from '@/lib/types'
 export function useNotifications(userId: string | null) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [latestNotification, setLatestNotification] = useState<Notification | null>(null)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
 
   const fetchNotifications = useCallback(async () => {
@@ -50,10 +51,18 @@ export function useNotifications(userId: string | null) {
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        async (payload) => {
+          // Fetch the profile for the from_user since the payload only has from_user_id
           const newNotif = payload.new as Notification
+          if (newNotif.from_user_id) {
+            const { data } = await supabase.from('profiles').select('id, handle, aura_points, avatar_url').eq('id', newNotif.from_user_id).single()
+            if (data) {
+              newNotif.from_user = data as any
+            }
+          }
           setNotifications((prev) => [newNotif, ...prev])
           setUnreadCount((prev) => prev + 1)
+          setLatestNotification(newNotif)
         }
       )
       .subscribe()
@@ -73,5 +82,5 @@ export function useNotifications(userId: string | null) {
     setUnreadCount(0)
   }, [userId])
 
-  return { notifications, unreadCount, markAllRead, refetch: fetchNotifications }
+  return { notifications, unreadCount, latestNotification, markAllRead, refetch: fetchNotifications }
 }

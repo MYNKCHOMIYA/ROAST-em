@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Flame, Search, PenLine, LogOut, Zap, User } from 'lucide-react'
-import type { Profile } from '@/lib/types'
+import type { Profile, Notification } from '@/lib/types'
 import { formatAura, handleToColor } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useNotifications } from '@/hooks/useNotifications'
-import { NotificationsBell, NotificationsPanel } from '@/components/NotificationsPanel'
+import { NotificationsBell, NotificationsPanel, NOTIF_ICONS, NOTIF_TEXT } from '@/components/NotificationsPanel'
 
 interface FeedNavProps {
   profile: Profile | null
@@ -21,9 +21,19 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
   const [showMenu, setShowMenu] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const { notifications, unreadCount, markAllRead } = useNotifications(profile?.id ?? null)
+  const [toastNotif, setToastNotif] = useState<Notification | null>(null)
+  const { notifications, unreadCount, latestNotification, markAllRead } = useNotifications(profile?.id ?? null)
 
   const avatarColor = profile ? handleToColor(profile.handle) : 'var(--aura-pink)'
+
+  // Toast for new notifications
+  useEffect(() => {
+    if (latestNotification) {
+      setToastNotif(latestNotification)
+      const timer = setTimeout(() => setToastNotif(null), 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [latestNotification])
 
   async function handleLogout() {
     setLoggingOut(true)
@@ -71,7 +81,12 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
             <div style={{ position: 'relative' }}>
               <NotificationsBell
                 unreadCount={unreadCount}
-                onClick={() => setShowNotifs((v) => !v)}
+                onClick={() => {
+                  setShowNotifs((v) => !v)
+                  if (!showNotifs && unreadCount > 0) {
+                    markAllRead()
+                  }
+                }}
               />
               <AnimatePresence>
                 {showNotifs && (
@@ -200,6 +215,37 @@ export default function FeedNav({ profile, activeTab, onTabChange }: FeedNavProp
           ))}
         </div>
       </div>
+
+      {/* Global Toast Popup */}
+      <AnimatePresence>
+        {toastNotif && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            style={{
+              position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+              background: 'var(--bg-elevated)', border: '1px solid var(--aura-pink)',
+              borderRadius: 'var(--radius-lg)', padding: '12px 16px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              boxShadow: '0 8px 32px rgba(255,60,172,0.2)',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(255,60,172,0.1)', border: '1px solid rgba(255,60,172,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {NOTIF_ICONS[toastNotif.type]}
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {NOTIF_TEXT[toastNotif.type](toastNotif.from_user?.handle ?? 'someone')}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   )
 }
