@@ -329,6 +329,12 @@ export default function FeedPage() {
                       currentUser={profile}
                       initialIsFollowing={profile ? followingIds.has(roast.author_id) : false}
                       onLiked={() => {}}
+                      onUnfollow={(authorId) => {
+                        // Immediately remove the user's roasts from the feed if we're in the 'following' tab
+                        if (tab === 'following') {
+                          setRoasts(prev => prev.filter(r => r.author_id !== authorId))
+                        }
+                      }}
                     />
                   ))}
                 </div>

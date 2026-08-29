@@ -43,7 +43,7 @@ export async function fetchFollowingFeed(userId: string, page = 0, limit = 20): 
     .eq('follower_id', userId)
 
   const followingIds = (follows ?? []).map((f) => f.following_id)
-  if (followingIds.length === 0) return fetchGlobalFeed(page, limit)
+  if (followingIds.length === 0) return []
 
   // Get blocklist to filter out
   const { data: blocks } = await supabase.rpc('get_my_blocks')

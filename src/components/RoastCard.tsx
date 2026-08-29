@@ -14,6 +14,7 @@ interface RoastCardProps {
   index?: number
   initialIsFollowing?: boolean
   onLiked?: (roastId: string) => void
+  onUnfollow?: (authorId: string) => void
 }
 
 /** Countdown timer for the 2-minute comeback window */
@@ -83,7 +84,7 @@ function Avatar({ handle, avatarUrl, size = 36 }: { handle: string; avatarUrl?: 
   )
 }
 
-export default function RoastCard({ roast, index = 0, currentUser, onLiked, initialIsFollowing = false }: RoastCardProps) {
+export default function RoastCard({ roast, index = 0, currentUser, onLiked, onUnfollow, initialIsFollowing = false }: RoastCardProps) {
   const [liked, setLiked] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [likeError, setLikeError] = useState('')
@@ -166,6 +167,7 @@ export default function RoastCard({ roast, index = 0, currentUser, onLiked, init
     try {
       const supabase = createClient()
       await supabase.from('follows').delete().eq('follower_id', currentUser!.id).eq('following_id', author.id)
+      onUnfollow?.(author.id)
     } catch (e) {
       console.error(e)
       setIsFollowing(true)
