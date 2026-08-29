@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { handleToColor, formatAura, timeAgo } from '@/lib/utils'
 import RoastCard from '@/components/RoastCard'
 import type { Profile, RoastWithProfiles } from '@/lib/types'
+import { FollowListModal } from '@/components/FollowListModal'
 
 export default function UserProfilePage() {
   const params = useParams()
@@ -25,6 +26,7 @@ export default function UserProfilePage() {
   const [tab, setTab] = useState<'roasts' | 'roasted'>('roasts')
   const [notFound, setNotFound] = useState(false)
   const [stats, setStats] = useState({ followers: 0, following: 0, roastsDropped: 0, gotRoasted: 0 })
+  const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -270,8 +272,12 @@ export default function UserProfilePage() {
           </div>
           
           <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: 14 }}>
-            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.followers}</strong> <span style={{ color: 'var(--text-secondary)' }}>Followers</span></div>
-            <div><strong style={{ color: 'var(--text-primary)' }}>{stats.following}</strong> <span style={{ color: 'var(--text-secondary)' }}>Following</span></div>
+            <div onClick={() => setFollowModal('followers')} style={{ cursor: 'pointer' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>{stats.followers}</strong> <span style={{ color: 'var(--text-secondary)' }}>Followers</span>
+            </div>
+            <div onClick={() => setFollowModal('following')} style={{ cursor: 'pointer' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>{stats.following}</strong> <span style={{ color: 'var(--text-secondary)' }}>Following</span>
+            </div>
             <div><strong style={{ color: 'var(--text-primary)' }}>{stats.roastsDropped}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasts</span></div>
             <div><strong style={{ color: 'var(--text-primary)' }}>{stats.gotRoasted}</strong> <span style={{ color: 'var(--text-secondary)' }}>Roasted</span></div>
           </div>
@@ -323,6 +329,15 @@ export default function UserProfilePage() {
           )}
         </AnimatePresence>
       </div>
+      
+      {/* Follow Modal */}
+      {followModal && profile && (
+        <FollowListModal
+          userId={profile.id}
+          type={followModal}
+          onClose={() => setFollowModal(null)}
+        />
+      )}
     </main>
   )
 }
